@@ -45,7 +45,7 @@ describe("POST /api/users", () => {
       phone: '1234567890',
       description: 'test description'
     }
-  let res = await request(app).post("/api/users").send(userItem);
+    let res = await request(app).post("/api/users").send(userItem);
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('full_name, phone, and email required');
@@ -57,7 +57,7 @@ describe("POST /api/users", () => {
       description: 'test description'
     }
 
-  res = await request(app).post("/api/users").send(userItem);
+    res = await request(app).post("/api/users").send(userItem);
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('full_name, phone, and email required');
@@ -85,18 +85,25 @@ describe("GET /api/users after creation", () => {
   });
 });
 
-describe("PUT /api/users/id after creation", async () =>{
+describe("PUT /api/users/id after creation", async () => {
+  beforeAll(async () => {
+    await initDb();
+    await pool.query("DELETE FROM users");
     const userItem = {
       full_name: 'test user',
       email: 'test@email.com',
       phone: '1234567890',
       description: 'test description'
     }
-    const res = await request(app).post("/api/users").send(userItem);
+    const res =
+      await request(app).post("/api/users").send(userItem);
 
+  });
+
+  
   it('should return 400 if user is updated', async () => {
-    const res = await request(app).get("/api/users");
-    const uuid = res.body[0].uuid;
+    let res = await request(app).get("/api/users");
+    const id = res.body[0].id;
     const payload = {
       full_name: 'new name',
       email: 'newemail@email.com',
@@ -104,9 +111,21 @@ describe("PUT /api/users/id after creation", async () =>{
       description: 'updated info'
     }
 
-    res = await request(app).post(`/api/users/:${uuid}`).send(payload);
-      expect(res.status).toBe(200);
+    res = await request(app).put(`/api/users/${id}`).send(payload);
+    expect(res.status).toBe(201);
+
+    const updatedUser = await pool.query(
+      'SELECT * from Users WHERE id=$1', [id]
+    );
+    expect(updatedUser.rows[0].full_name).toBe(payload.full_name);
+    expect(updatedUser.rows[0].email).toBe(payload.email);
+    expect(updatedUser.rows[0].phone).toBe(payload.phone);
+    expect (updatedUser.rows[0].description).toBe(payload.description);
+
+
+    console.log(updatedUser);
   });
+
 });
 describe("DELETE user", () => {
 

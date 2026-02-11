@@ -33,12 +33,20 @@ router.post("/", async (req, res) => {
 });
 
 router.put("/:id", async (req, res) => {
-  const User = await User.update(req.params.id, req.body);
+
   const { full_name, phone, email, description } = req.body;
-  if (!full_name && !email && !phone && !description){
+  if (!full_name && !email && !phone && !description) {
     return res.status(400).json({ error: "at least one of the fields is required: full_name, phone, email, description" });
   }
-  if (!User) return res.status(404).json({ error: "Not found" });
+  try{
+    const user = await User.update(req.params.id, req.body);
+    res.status(201).json(user);
+  }
+  catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Internal server error"});
+  }
+  if (!user) return res.status(404).json({ error: "Not found" });
   res.json(User);
 });
 

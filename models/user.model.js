@@ -44,9 +44,9 @@ export async function update(id, { full_name, email, phone, description }) {
   const { rows } = await pool.query(
     `
     UPDATE users
-    SET name = $1, email = $2, phone = $3, description = $4
+    SET full_name = $1, email = $2, phone = $3, description = $4
     WHERE id = $5
-    RETURNING id, name, email, phone, description
+    RETURNING id, full_name, email, phone, description
     `,
     [full_name, email, phone, description, id]
   );
