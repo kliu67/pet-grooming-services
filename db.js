@@ -8,8 +8,19 @@ if (process.env.NODE_ENV === "test") {
 }
 const { Pool } = pg;
 
+// export const pool = new Pool({
+//     connectionString: process.env.DATABASE_URL,
+// });
+
 export const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: Number(process.env.DB_PORT),
+  ssl: {
+    rejectUnauthorized: false, // required for RDS
+  },
 });
 
 
@@ -27,9 +38,9 @@ export async function initDb() {
 
     CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        full_name VARCHAR(60) NOT NULL,
-        email TEXT NOT NULL,
-        phone TEXT NOT NULL,
+        full_name VARCHAR(60) NOT NULL UNIQUE,
+        email TEXT NOT NULL UNIQUE,
+        phone TEXT NOT NULL UNIQUE,
         description TEXT,
         created_at TIMESTAMP,
         UNIQUE(full_name, email, phone)
