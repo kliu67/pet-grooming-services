@@ -37,9 +37,10 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const { full_name, phone, email } = req.body;
-  if (!full_name || !email || !phone) {
-    return res.status(400).json({ error: "full_name, phone, and email required" });
+  if (!full_name || !phone) {
+    return res.status(400).json({ error: "full_name and phone required" });
   }
+
   if(!isValidEmail(email)){
     return res.status(400).json({error: "invalid email format"});
   }

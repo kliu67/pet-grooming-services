@@ -173,7 +173,7 @@ describe("GET /api/users after creation", () => {
     expect(res.body[0].full_name).toBe("test user");
   });
 
-  it("should return 200 if get by id is successful", async () => {
+  it("should return 200 if get by user id is successful", async () => {
     let res = await request(app).get("/api/users");
     const _id = res.body[0].id;
      res = await request(app).get(`/api/users/${_id}`);
