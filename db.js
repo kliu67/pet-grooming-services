@@ -38,9 +38,9 @@ export async function initDb() {
 
     CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        full_name VARCHAR(60) NOT NULL,
-        email TEXT NOT NULL,
-        phone TEXT NOT NULL,
+        full_name VARCHAR(60) NOT NULL UNIQUE,
+        email TEXT NOT NULL UNIQUE,
+        phone TEXT NOT NULL UNIQUE,
         description TEXT,
         created_at TIMESTAMP,
         UNIQUE(full_name, email, phone)
