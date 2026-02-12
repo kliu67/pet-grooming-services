@@ -1,13 +1,13 @@
 import express from "express";
 import * as User from "../models/user.model.js";
 import {isNumbersOnly, isValidEmail, isValidUUID} from "../utils/helpers.js";
+
 const PSQL_ERRORS = {
   UNIQUE_VIOLATION:{
     CODE:'23505',
   },
 }
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// import * from "../utils/helpers.js"
+
 const router = express.Router();
 
 router.get("/", async (req, res) => {
