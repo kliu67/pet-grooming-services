@@ -1,10 +1,5 @@
 import { validate as isUuid } from "uuid";
 
-export const objectIsEmptyOrNull  = (object)=>{
-    
-    return false;
-}
-
 export const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);

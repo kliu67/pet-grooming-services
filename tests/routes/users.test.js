@@ -111,7 +111,7 @@ describe("POST /api/users", () => {
       description: "test description"
     };
         
-    let res = await request(app).post("/api/users").send(userItem);
+    await request(app).post("/api/users").send(userItem);
 
     //duplicate full_name
      let duplicateUserItem = {
@@ -121,7 +121,7 @@ describe("POST /api/users", () => {
       description: "test description"
     };
 
-      res = await request(app).post("/api/users").send(duplicateUserItem);
+    let res = await request(app).post("/api/users").send(duplicateUserItem);
      expect(res.status).toBe(409)
      expect(res.error.text).toBe("{\"error\":\"duplicate key value violates unique constraint \\\"users_full_name_key\\\"\"}");
     
@@ -164,7 +164,7 @@ describe("GET /api/users after creation", () => {
       phone: "1234567890",
       description: "test description"
     };
-    const res = await request(app).post("/api/users").send(userItem);
+    await request(app).post("/api/users").send(userItem);
   })
   it("should return array with one user", async () => {
     const res = await request(app).get("/api/users");
@@ -218,7 +218,7 @@ describe("PUT /api/users/id after creation", async () => {
       phone: "1234567890",
       description: "test description"
     };
-    const res = await request(app).post("/api/users").send(userItem);
+    await request(app).post("/api/users").send(userItem);
   });
 
   afterAll(async () => {
@@ -309,9 +309,7 @@ describe("DELETE user", () => {
       phone: "1234567890",
       description: "test description"
     };
-    const res = await request(app).post("/api/users").send(userItem);
-
-    
+    await request(app).post("/api/users").send(userItem);
   });
 
   afterAll(async () => {
