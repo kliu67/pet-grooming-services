@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { pool, initDb } from "./db.js";
 import userRoutes from "./routes/users.routes.js"; // ✅
+import serviceRoutes from "./routes/services.routes.js"
 
 
 dotenv.config();
@@ -89,5 +90,6 @@ app.get("/api/health", (req, res) => {
 
 // app.use("/api/users", itemRoutes);
 app.use("/api/users", userRoutes);
+// app.use("/api/services", serviceRoutes);
 
 

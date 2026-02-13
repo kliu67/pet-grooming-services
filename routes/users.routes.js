@@ -21,9 +21,9 @@ router.get("/:id", async (req, res) => {
   if (!id) {
     return res.status(400).json({ error: "id required" });
   }
-  if(!isValidUUID(id)){
-    return res.status(400).json({ error: "id is not valid uuid"});
-  }
+  // if(!isValidUUID(id)){
+  //   return res.status(400).json({ error: "id is not valid uuid"});
+  // }
   try{
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: "Not found" });
@@ -48,6 +48,7 @@ router.post("/", async (req, res) => {
   if(!isNumbersOnly(phone)){
     return res.status(400).json({error: 'invalid phone format'})
   }
+
   try {
     const user = await User.create(req.body);
     res.status(201).json(user);
@@ -57,7 +58,6 @@ router.post("/", async (req, res) => {
           res.status(409).json({ error: err?.message });
     }
     else{
-
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -70,11 +70,6 @@ router.put("/:id", async (req, res) => {
   if (!full_name && !email && !phone && !description) {
     return res.status(400).json({ error: "at least one of the fields is required: full_name, phone, email, description" });
   }
-
-  if(!isValidUUID(id)){
-    return res.status(400).json({ error: "id is not valid uuid"});
-  }
-
     if(!isValidEmail(email)){
     return res.status(400).json({error: "invalid email format"});
   }
@@ -98,9 +93,6 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
-  if(!isValidUUID(id)){
-    return res.status(400).json({ error: "id is not valid uuid"});
-  }
   try{
     const ok = await User.remove(id);
     if(!ok){
