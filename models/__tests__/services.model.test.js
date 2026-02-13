@@ -1,5 +1,3 @@
-// models/__tests__/services.model.test.js
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock db module
@@ -170,7 +168,6 @@ describe('remove', () => {
     const result = await remove(1);
 
     expect(result).toBe(true); 
-    // This exposes your implementation bug (rowCount > 1)
   });
 
 });
