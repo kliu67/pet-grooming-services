@@ -46,13 +46,12 @@ export async function initDb() {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        full_name VARCHAR(60) NOT NULL UNIQUE,
-        email TEXT UNIQUE,
-        phone TEXT NOT NULL UNIQUE,
-        description TEXT,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        UNIQUE(full_name, email, phone)
+    id SERIAL PRIMARY KEY,
+    full_name VARCHAR(60) NOT NULL,
+    email TEXT UNIQUE,
+    phone TEXT UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
         );
     `);
 
