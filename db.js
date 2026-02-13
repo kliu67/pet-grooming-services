@@ -19,14 +19,12 @@ export const pool = new Pool({
   database: process.env.DB_NAME,
   port: Number(process.env.DB_PORT),
   ssl: {
-    rejectUnauthorized: false, // required for RDS
-  },
+    rejectUnauthorized: false // required for RDS
+  }
 });
 
-
-
 export async function initDb() {
-    await pool.query(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS items (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
@@ -34,56 +32,76 @@ export async function initDb() {
         );
     `);
 
-    await pool.query(`
-
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        id SERIAL PRIMARY KEY,
         full_name VARCHAR(60) NOT NULL UNIQUE,
         email TEXT UNIQUE,
         phone TEXT NOT NULL UNIQUE,
         description TEXT,
-        created_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         UNIQUE(full_name, email, phone)
         );
     `);
 
-
-    await pool.query(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS species (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        id SERIAL PRIMARY KEY,
         name VARCHAR(60) NOT NULL
         );
     `);
 
-
-    await pool.query(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS pets(
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        id SERIAL PRIMARY KEY,
         name VARCHAR(20) NOT NULL,
-        species UUID REFERENCES species(id),
-        owner UUID REFERENCES users(id),
-        created_at TIMESTAMP
+        species INTEGER NOT NULL REFERENCES species(id),
+        owner INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        uuid UUID DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
         );
     `);
 
-    await pool.query(`
+  await pool.query(`
         CREATE TABLE IF NOT EXISTS services(
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        name VARCHAR(60) NOT NULL,
-        price REAL NOT NULL,
-        created_at TIMESTAMP
-        )`)
-    
-    await pool.query(`
-        CREATE TABLE IF NOT EXISTS appointments(
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id),
-        pet_id UUID REFERENCES pets(id),
-        service_id UUID REFERENCES services(id),
-        description TEXT,
-        created_at TIMESTAMP
-        )`);
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(60) NOT NULL UNIQUE,
+        base_price NUMERIC(10,2) NOT NULL,
+        uuid UUID DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        `);
 
-    const result = await pool.query("SELECT 1");
-    console.log("DB OK:", result.rows);
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS appointments(
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) NOT NULL,
+        pet_id INTEGER REFERENCES pets(id) NOT NULL,
+        service_id INTEGER REFERENCES services(id) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );`);
+
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS weight_classes (
+        id SERIAL PRIMARY KEY,
+        label TEXT NOT NULL UNIQUE
+        );
+      `);
+
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS service_configurations (
+        species_id INTEGER REFERENCES species(id) ON DELETE CASCADE,
+        service_id INTEGER REFERENCES services(id) ON DELETE CASCADE,
+        weight_class_id INTEGER REFERENCES weight_classes(id) ON DELETE CASCADE,
+        
+        price NUMERIC(10, 2) NOT NULL,
+        duration_minutes INTEGER NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        
+        PRIMARY KEY (species_id, service_id, weight_class_id));
+      `);
+
+  const result = await pool.query("SELECT 1");
+  console.log("DB OK:", result.rows);
 }
