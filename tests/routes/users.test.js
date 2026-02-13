@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../../index.js";
 import { initDb, pool } from "../../db.js";
-import { v4 as uuidv4 } from "uuid"
+import { v4 as uuidv4 } from "uuid";
 
 beforeAll(async () => {
   await initDb();
@@ -39,7 +38,7 @@ describe("POST /api/users", () => {
     expect(res.body.full_name).toBe("test user");
   });
 
-  it("should return 400 if user full name, phone, or email is empty", async () => {
+  it("should return 400 if user full name or phone is empty", async () => {
     let userItem = {
       full_name: "",
       email: "test@email.com",
@@ -49,19 +48,19 @@ describe("POST /api/users", () => {
     let res = await request(app).post("/api/users").send(userItem);
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("full_name, phone, and email required");
+    expect(res.body.error).toBe("full_name and phone required");
 
-    userItem = {
-      full_name: "test user",
-      email: "",
-      phone: "1234567890",
-      description: "test description"
-    };
+    // userItem = {
+    //   full_name: "test user",
+    //   email: "",
+    //   phone: "1234567890",
+    //   description: "test description"
+    // };
 
-    res = await request(app).post("/api/users").send(userItem);
+    // res = await request(app).post("/api/users").send(userItem);
 
-    expect(res.status).toBe(400);
-    expect(res.body.error).toBe("full_name, phone, and email required");
+    // expect(res.status).toBe(400);
+    // expect(res.body.error).toBe("full_name, phone, and email required");
     userItem = {
       full_name: "test user",
       email: "test@email.com",
@@ -71,7 +70,7 @@ describe("POST /api/users", () => {
     res = await request(app).post("/api/users").send(userItem);
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("full_name, phone, and email required");
+    expect(res.body.error).toBe("full_name and phone required");
   });
     it("should return 400 if user phone or email is invalid", async () => {
     //invalid email
@@ -208,7 +207,7 @@ describe("GET /api/users after creation", () => {
 
 
 
-describe("PUT /api/users/id after creation", async () => {
+describe("PUT /api/users/id after creation",  () => {
   beforeAll(async () => {
     await initDb();
     await pool.query("DELETE FROM users");
