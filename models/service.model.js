@@ -29,6 +29,8 @@ export async function findAll(){
     const { rows } = await pool.query(
         `SELECT id, name, base_price, uuid, created_at FROM services`
     )
+
+    return rows ?? null;
 }
 
 export async function create({name, base_price}){
@@ -38,7 +40,7 @@ export async function create({name, base_price}){
     }
 
     //base_price cannot be null or undefined
-    if(Number(base_price) == NaN){
+    if(isNaN(Number(base_price))){
         throw new Error('data validation error: base_price cannot be null, or undefined')
     }
 
@@ -76,7 +78,7 @@ export async function update(id, {name='', base_price=''}){
         throw new Error('data validation error: name cannot be empty, null, or undefined')
     }
 
-     if(Number(base_price) == NaN){
+     if(isNaN(Number(base_price))){
         throw new Error('data validation error: base_price cannot be null, or undefined')
     }
 
@@ -113,6 +115,7 @@ export async function remove(id){
     if( rowCount === 0){
         throw new Error(`Service with id ${id} not found`);
     }
-    return rowCount > 1;
+
+    return rowCount === 1;
 }
 
