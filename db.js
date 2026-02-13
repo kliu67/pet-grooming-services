@@ -12,15 +12,27 @@ const { Pool } = pg;
 //     connectionString: process.env.DATABASE_URL,
 // });
 
+// export const pool = new Pool({
+//   host: process.env.DB_HOST,
+//   user: process.env.DB_USER,
+//   password: process.env.DB_PASSWORD,
+//   database: process.env.DB_NAME,
+//   port: Number(process.env.DB_PORT),
+//   ssl: {
+//     rejectUnauthorized: false // required for RDS
+//   }
+// });
+
+//use this for public connections
 export const pool = new Pool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: Number(process.env.DB_PORT),
-  ssl: {
-    rejectUnauthorized: false // required for RDS
-  }
+  port: Number(process.env.DB_PORT)
+  // ssl: {
+  //   rejectUnauthorized: false // required for RDS
+  // }
 });
 
 export async function initDb() {
