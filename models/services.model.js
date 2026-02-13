@@ -1,12 +1,5 @@
 import { pool } from "../db.js";
 
-/** get all services */
-export async function findAll() {
-    const {rows} = await pool.query(
-        "SELECT id, name, price, created_at FROM services"
-    );
-    return rows;
-}
 
 export async function findById(id) {
 
@@ -67,6 +60,12 @@ export async function create({name, base_price}){
         }
         throw new Error(err.message);
     }
+}
 
+export async function update({name='', base_price=''}){
+
+}
+
+export async function remove(id){
 
 }
