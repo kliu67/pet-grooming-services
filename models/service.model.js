@@ -1,5 +1,5 @@
 import { pool } from "../db.js";
-import { isValidId } from "../utils/helper"
+import { isValidId } from "../utils/helpers.js";
 
 
 export async function findById(id) {
@@ -115,3 +115,4 @@ export async function remove(id){
     }
     return rowCount > 1;
 }
+
