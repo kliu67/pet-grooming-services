@@ -1,38 +1,40 @@
 import { pool } from "../db.js";
 import { isValidId } from "../utils/helpers.js";
-
-
-export async function findById(id) {
-
-    //check if id is number
-    const sanitizedId = Number(id);
-    if (isNaN(sanitizedId)) {
-        throw new Error('ID must be a number');
-    }
-
-    //check if id is null or empty
-    if(sanitizedId < 1){
-        throw new Error('ID is invalid');
-    }
-
-    const {rows} = await pool.query(
-        `SELECT id, name, base_price, uuid, created_at FROM services
-        WHERE id = $1`,
-        [sanitizedId]
-    );
-
-    return rows[0] ?? null;
-
-}
+import { validateNumericId } from "../validators/validator.js";
+import { isIdValidNumeric } from  "../validators/validator.js";
 
 export async function findAll(){
     const { rows } = await pool.query(
         `SELECT id, name, base_price, uuid, created_at FROM services`
     )
-
     return rows ?? null;
 }
 
+/**
+ * Get service by id
+ */
+export async function findById(id) {
+
+    // if(!isIdValidNumeric(id)){
+    //      throw new Error(`data validation error: id ${id} is invalid`);
+    // }
+
+    const sanitizedId = validateNumericId(id);
+    const {rows} = await pool.query(
+        `SELECT id, name, base_price, uuid, created_at FROM services
+        WHERE id = $1`,
+        [sanitizedId]
+    );
+    return rows[0] ?? null;
+
+}
+
+
+/**
+ * 
+ * @param {create service} param0 
+ * @returns 
+ */
 export async function create({name, base_price}){
     //name cannot be empty, null or undefined
     if(!name){
@@ -70,10 +72,9 @@ export async function create({name, base_price}){
 }
 
 export async function update(id, {name='', base_price=''}){
-    if(!isValidId(id)){
-        throw new Error('data validation error: ID is invalid')
-    }
-
+  if (!isIdValidNumeric(id)) {
+    throw new Error(`data validation error: id ${id} is invalid`);
+  }
     if(!name){
         throw new Error('data validation error: name cannot be empty, null, or undefined')
     }
