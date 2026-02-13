@@ -12,3 +12,12 @@ export const isNumbersOnly = (str)=> {
 export const isValidUUID = (id) => {
   return isUuid(id);
 }
+
+export const isValidId = (id) => {
+  const sanitizedId = Number(id);
+  return sanitizedId !== NaN && sanitizedId > 0;
+}
+
+export const isValidPrice = (price) =>{
+  return price >= 0;
+}
