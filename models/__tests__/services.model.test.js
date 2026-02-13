@@ -39,7 +39,7 @@ describe('findById', () => {
   it('throws if id < 1', async () => {
     await expect(findById(0))
       .rejects
-      .toThrow('ID is invalid');
+      .toThrow('must be greater than 0');
   });
 
   it('returns null if not found', async () => {
@@ -116,7 +116,7 @@ describe('update', () => {
 
     await expect(update(0, { name: 'Wash', base_price: 10 }))
       .rejects
-      .toThrow('ID is invalid');
+      .toThrow('data validation error: id 0 is invalid');
   });
 
   it('throws if not found', async () => {
