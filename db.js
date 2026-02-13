@@ -58,9 +58,14 @@ export async function initDb() {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS species (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(60) NOT NULL
-        );
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(60) NOT NULL
+      CHECK (length(trim(name)) > 0),
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+
+    CREATE UNIQUE INDEX species_name_lower_unique
+    ON species (LOWER(name));
     `);
 
   await pool.query(`
