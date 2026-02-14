@@ -71,12 +71,17 @@ export async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS pets(
         id SERIAL PRIMARY KEY,
-        name VARCHAR(20) NOT NULL,
+        name VARCHAR(60) NOT NULL
+          CHECK (length(trim(name)) > 0),
         species INTEGER NOT NULL REFERENCES species(id),
         owner INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        uuid UUID DEFAULT gen_random_uuid(),
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        uuid UUID UNIQUE DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP
         );
+    
+    CREATE INDEX idx_pets_owner   ON pets(owner);
+    CREATE INDEX idx_pets_species ON pets(species);
     `);
 
   await pool.query(`
