@@ -1,7 +1,7 @@
 import { pool } from "../db.js";
 import { isValidEmail, isValidPhone } from "../validators/user.validator.js";
 import { isIdValidNumeric, validateNumericId } from "../validators/validator.js";
-const MAX_NAME_LENGTH = 60;
+import { MAX_NAME_LENGTH } from "../utils/constants.js";
 /**
  * Get all users
  */
