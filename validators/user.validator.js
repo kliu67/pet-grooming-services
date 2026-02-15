@@ -5,5 +5,5 @@ export const isValidEmail = (email) => {
 }
 
 export const isValidPhone = (phone) =>{
-    return !/^[0-9+\-()\s]{6,20}$/.test(phone);
+    return /^[0-9+\-()\s]{6,20}$/.test(phone);
 }
