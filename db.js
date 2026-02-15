@@ -97,31 +97,85 @@ export async function initDb() {
   await pool.query(`
         CREATE TABLE IF NOT EXISTS appointments(
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) NOT NULL,
-        pet_id INTEGER REFERENCES pets(id) NOT NULL,
-        service_id INTEGER REFERENCES services(id) NOT NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE RESTRICT NOT NULL,
+        pet_id INTEGER REFERENCES pets(id) ON DELETE RESTRICT NOT NULL,
+        service_id INTEGER REFERENCES services(id) ON DELETE RESTRICT NOT NULL,
         description TEXT,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-        );`);
+        start_time TIMESTAMPZ NOT NULL,
+        end_time TIMESTAMPZ NOT NULL,
+        CHECK (end_time > start_time),
+        status TEXT NOT NULL DEFAULT 'booked'
+        CHECK (status IN ('booked','confirmed','completed','cancelled','no_show')),
+        price_snapshot NUMERIC(10,2) NOT NULL
+          CHECK (price_snapshot >= 0),
+        duration_snapshot INTEGER NOT NULL
+          CHECK (duration_snapshot > 0),
+        uuid UUID UNIQUE DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP
+        );
+        
+        CREATE INDEX idx_appt_user   ON appointments(user_id);
+        CREATE INDEX idx_appt_pet    ON appointments(pet_id);
+        CREATE INDEX idx_appt_start  ON appointments(start_time);
+        CREATE INDEX idx_appt_pet_start ON appointments(pet_id, start_time);
+        CREATE INDEX idx_appt_status ON appointments(status);
+        
+        CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+        ALTER TABLE appointments
+        ADD CONSTRAINT no_overlapping_pet_appointments
+        EXCLUDE USING gist (
+          pet_id WITH =,
+          tstzrange(start_time, end_time) WITH &&
+        );
+
+        CREATE OR REPLACE FUNCTION set_updated_at()
+        RETURNS TRIGGER AS $$
+        BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+
+        CREATE TRIGGER appointments_set_updated_at
+        BEFORE UPDATE ON appointments
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+        
+        `);
 
   await pool.query(`
-        CREATE TABLE IF NOT EXISTS weight_classes (
+       CREATE TABLE IF NOT EXISTS weight_classes (
         id SERIAL PRIMARY KEY,
-        label TEXT NOT NULL UNIQUE
+        label TEXT NOT NULL
+        CHECK (length(trim(label)) > 0)
         );
+
+        CREATE UNIQUE INDEX weight_classes_label_lower_unique
+        ON weight_classes (LOWER(label));
       `);
 
   await pool.query(`
         CREATE TABLE IF NOT EXISTS service_configurations (
-        species_id INTEGER REFERENCES species(id) ON DELETE CASCADE,
-        service_id INTEGER REFERENCES services(id) ON DELETE CASCADE,
-        weight_class_id INTEGER REFERENCES weight_classes(id) ON DELETE CASCADE,
+        species_id INTEGER NOT NULL REFERENCES species(id) ON DELETE CASCADE,
+        service_id INTEGER NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+        weight_class_id INTEGER NOT NULL REFERENCES weight_classes(id) ON DELETE CASCADE,
         
-        price NUMERIC(10, 2) NOT NULL,
-        duration_minutes INTEGER NOT NULL,
+        price NUMERIC(10, 2) NOT NULL
+          CHECK (price >= 0) ,
+        duration_minutes INTEGER NOT NULL
+          CHECK (duration_minutes > 0),
         is_active BOOLEAN DEFAULT TRUE,
-        
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP,
         PRIMARY KEY (species_id, service_id, weight_class_id));
+
+        CREATE INDEX idx_cfg_species_service
+        ON service_configurations (species_id, service_id);
+
+        CREATE INDEX idx_cfg_service
+        ON service_configurations (service_id);
       `);
 
   const result = await pool.query("SELECT 1");
