@@ -2,8 +2,9 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { pool, initDb } from "./db.js";
-import userRoutes from "./routes/users.routes.js";
+import userRoutes from "./routes/user.routes.js";
 import serviceRoutes from "./routes/services.routes.js"
+import { errorHandler } from "./middleware/error.middleware.js";
 
 
 dotenv.config();
@@ -14,6 +15,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(errorHandler);
 
 // Initialize DB
 // initDb().then(() => console.log("Postgres ready"));
