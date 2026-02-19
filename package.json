@@ -23,22 +23,16 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.0",
     "@eslint/css": "^0.14.1",
     "@eslint/json": "^1.0.1",
     "@eslint/markdown": "^7.5.1",
-    "@types/jest": "^30.0.0",
     "@vitest/coverage-v8": "^4.0.18",
-    "babel-jest": "^30.2.0",
     "cross-env": "^10.1.0",
     "eslint": "^9.39.2",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^17.3.0",
-    "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "supertest": "^7.2.2",
-    "ts-jest": "^29.4.6",
     "vitest": "^4.0.18"
   }
 }

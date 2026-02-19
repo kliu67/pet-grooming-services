@@ -64,7 +64,7 @@ export async function initDb() {
     created_at TIMESTAMP DEFAULT NOW()
   );
 
-    CREATE UNIQUE INDEX species_name_lower_unique
+    CREATE UNIQUE INDEX IF NOT EXISTS species_name_lower_unique
     ON species (LOWER(name));
     `);
 
@@ -80,8 +80,8 @@ export async function initDb() {
         updated_at TIMESTAMP
         );
     
-    CREATE INDEX idx_pets_owner   ON pets(owner);
-    CREATE INDEX idx_pets_species ON pets(species);
+    CREATE INDEX IF NOT EXISTS idx_pets_owner   ON pets(owner);
+    CREATE INDEX IF NOT EXISTS idx_pets_species ON pets(species);
     `);
 
   await pool.query(`
@@ -101,8 +101,8 @@ export async function initDb() {
         pet_id INTEGER REFERENCES pets(id) ON DELETE RESTRICT NOT NULL,
         service_id INTEGER REFERENCES services(id) ON DELETE RESTRICT NOT NULL,
         description TEXT,
-        start_time TIMESTAMPZ NOT NULL,
-        end_time TIMESTAMPZ NOT NULL,
+        start_time TIMESTAMPTZ NOT NULL,
+        end_time TIMESTAMPTZ NOT NULL,
         CHECK (end_time > start_time),
         status TEXT NOT NULL DEFAULT 'booked'
         CHECK (status IN ('booked','confirmed','completed','cancelled','no_show')),
@@ -115,11 +115,11 @@ export async function initDb() {
         updated_at TIMESTAMP
         );
         
-        CREATE INDEX idx_appt_user   ON appointments(user_id);
-        CREATE INDEX idx_appt_pet    ON appointments(pet_id);
-        CREATE INDEX idx_appt_start  ON appointments(start_time);
-        CREATE INDEX idx_appt_pet_start ON appointments(pet_id, start_time);
-        CREATE INDEX idx_appt_status ON appointments(status);
+        CREATE INDEX IF NOT EXISTS idx_appt_user   ON appointments(user_id);
+        CREATE INDEX IF NOT EXISTS idx_appt_pet    ON appointments(pet_id);
+        CREATE INDEX IF NOT EXISTS idx_appt_start  ON appointments(start_time);
+        CREATE INDEX IF NOT EXISTS idx_appt_pet_start  ON appointments(pet_id, start_time);
+        CREATE INDEX IF NOT EXISTS idx_appt_status ON  appointments(status);
         
         CREATE EXTENSION IF NOT EXISTS btree_gist;
 
@@ -152,7 +152,7 @@ export async function initDb() {
         CHECK (length(trim(label)) > 0)
         );
 
-        CREATE UNIQUE INDEX weight_classes_label_lower_unique
+        CREATE UNIQUE INDEX IF NOT EXISTS weight_classes_label_lower_unique
         ON weight_classes (LOWER(label));
       `);
 
@@ -171,10 +171,10 @@ export async function initDb() {
         updated_at TIMESTAMP,
         PRIMARY KEY (species_id, service_id, weight_class_id));
 
-        CREATE INDEX idx_cfg_species_service
+        CREATE INDEX IF NOT EXISTS idx_cfg_species_service 
         ON service_configurations (species_id, service_id);
 
-        CREATE INDEX idx_cfg_service
+        CREATE INDEX IF NOT EXISTS idx_cfg_service
         ON service_configurations (service_id);
       `);
 
