@@ -2,13 +2,13 @@ import request from "supertest";
 import express from "express";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import userRoutes from "../user.routes.js";
-import * as User from "../../models/user.model.js";
+import userRoutes from "../users.routes.js";
+import * as User from "../../models/users.model.js";
 
 //
 // Mock the model (NO DB)
 //
-vi.mock("../../models/user.model.js");
+vi.mock("../../models/users.model.js");
 
 //
 // Build test app

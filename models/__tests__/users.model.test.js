@@ -29,7 +29,7 @@ import {
   create,
   update,
   remove,
-} from '../user.model.js';
+} from '../users.model.js';
 
 beforeEach(() => {
   vi.clearAllMocks();

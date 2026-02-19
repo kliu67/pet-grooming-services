@@ -7,7 +7,9 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "test_backup": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test": "npx jest --watch"
+    "test": "npx jest --watch",
+    "vitest": "vitest",
+    "vitest:coverage": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",

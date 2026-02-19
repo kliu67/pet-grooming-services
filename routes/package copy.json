@@ -1,7 +1,0 @@
-{
-  "type":"module",
-  "scripts": {
-    "vitest": "vitest",
-    "vitest:coverage": "vitest run --coverage"
-  }
-}

@@ -1,4 +1,4 @@
-import * as User from "../models/user.model.js";
+import * as User from "../models/users.model.js";
 import { isValidEmail } from "../utils/helpers.js";
 import { isValidPhone } from "../validators/user.validator.js";
 

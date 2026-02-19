@@ -16,7 +16,7 @@ import {
   remove,
   getActiveConfig,
   findByService,
-} from '../service_configuration.model.js';
+} from '../serviceConfigurations.model.js';
 
 beforeEach(() => {
   vi.clearAllMocks();

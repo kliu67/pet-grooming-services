@@ -21,7 +21,7 @@ import {
   create,
   update,
   remove,
-} from '../service.model.js';
+} from '../services.model.js';
 
 beforeEach(() => {
   vi.clearAllMocks();

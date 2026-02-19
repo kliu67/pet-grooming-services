@@ -14,7 +14,7 @@ import {
   findById,
   create,
   remove,
-} from '../weight_classe.model.js';
+} from '../weightClasses.model.js';
 
 beforeEach(() => {
   vi.clearAllMocks();

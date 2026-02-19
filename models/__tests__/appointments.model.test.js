@@ -22,7 +22,7 @@ import {
   findById,
   cancel,
   reschedule,
-} from '../appointment.model.js';
+} from '../appointments.model.js';
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -1,7 +1,6 @@
 import { pool } from '../db.js';
 import { MAX_NAME_LENGTH } from '../utils/constants.js';
 
-const MAX_NAME_LENGTH = 60;
 
 /* ----------------------------- helpers ----------------------------- */
 
