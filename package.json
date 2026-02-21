@@ -9,7 +9,9 @@
     "test_backup": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test": "npx jest --watch",
     "vitest": "vitest",
-    "vitest:coverage": "vitest run --coverage"
+    "vitest:coverage": "vitest run --coverage",
+    "migrate": "node db/migrate.js",
+    "seed:species": "node db/seeds/seedSpecies.js"
   },
   "keywords": [],
   "author": "",

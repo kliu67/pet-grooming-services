@@ -28,6 +28,19 @@ beforeEach(() => {
 });
 
 //read
+
+describe('findAll', () => {
+  it('returns all rows', async () => {
+    const mockRows = [{ id: 1 }, { id: 2 }];
+    pool.query.mockResolvedValue({ rows: mockRows });
+
+    const result = await findAll();
+
+    expect(result).toEqual(mockRows);
+    expect(pool.query).toHaveBeenCalled();
+  });
+});
+
 describe('findById', () => {
 
   it('throws if id is not a number', async () => {
@@ -71,23 +84,29 @@ describe('create', () => {
       .toThrow('data validation error');
   });
 
+  it('throws if description is empty', async () => {
+    await expect(create({ name: 'Wash', base_price: 10, description: ''}))
+      .rejects
+      .toThrow('data validation error');
+  })
+
   it('throws if base_price is negative', async () => {
-    await expect(create({ name: 'Wash', base_price: -1 }))
+    await expect(create({ name: 'Wash', base_price: -1, description: 'some description' }))
       .rejects
       .toThrow('base_price cannot be negative');
   });
 
   it('returns inserted row', async () => {
-    const mockRow = { id: 1, name: 'Wash', base_price: 10 };
+    const mockRow = { id: 1, name: 'Wash', base_price: 10, description: 'some description' };
 
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
-    const result = await create({ name: 'Wash', base_price: 10 });
+    const result = await create({ name: 'Wash', base_price: 10, description: 'some description' });
 
     expect(result).toEqual(mockRow);
     expect(pool.query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO services'),
-      ['Wash', 10]
+      ['Wash', 10, 'some description']
     );
   });
 
@@ -97,7 +116,7 @@ describe('create', () => {
       details: 'Key (name) already exists',
     });
 
-    await expect(create({ name: 'Wash', base_price: 10 }))
+    await expect(create({ name: 'Wash', base_price: 10, description: 'some description' }))
       .rejects
       .toThrow('already exists');
   });
@@ -114,7 +133,7 @@ describe('update', () => {
   it('throws if id invalid', async () => {
     isValidId.mockReturnValue(false);
 
-    await expect(update(0, { name: 'Wash', base_price: 10 }))
+    await expect(update(0, { name: 'Wash', base_price: 10, description: 'some description' }))
       .rejects
       .toThrow('data validation error: id 0 is invalid');
   });
@@ -122,17 +141,17 @@ describe('update', () => {
   it('throws if not found', async () => {
     pool.query.mockResolvedValue({ rows: [] });
 
-    await expect(update(1, { name: 'Wash', base_price: 10 }))
+    await expect(update(1, { name: 'Wash', base_price: 10, description: 'some description' }))
       .rejects
       .toThrow('not found');
   });
 
   it('returns updated row', async () => {
-    const mockRow = { id: 1, name: 'Wash', base_price: 10 };
+    const mockRow = { id: 1, name: 'Wash', base_price: 10, description: 'some description' };
 
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
-    const result = await update(1, { name: 'Wash', base_price: 10 });
+    const result = await update(1, { name: 'Wash', base_price: 10, description: 'some description' });
 
     expect(result).toEqual(mockRow);
   });

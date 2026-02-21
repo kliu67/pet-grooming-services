@@ -13,13 +13,17 @@ import appointmentRoutes from "./routes/appointments.routes.js"
 import { errorHandler } from "./middleware/error.middleware.js";
 
 
+
 dotenv.config();
 
 export const app = express(); // export the app itself
 
 const PORT = process.env.PORT || 3000;
+const FE_PORT = process.env.FEPORT || 5173;
 
-app.use(cors());
+app.use(cors({
+  origin: `http://localhost:${FE_PORT}`, // your frontend
+}));
 app.use(express.json());
 app.use(errorHandler);
 
@@ -31,7 +35,6 @@ if (process.env.NODE_ENV !== "test") {
   initDb().then(() => {
     app.listen(PORT, () => console.log("Postgres ready"));
     app.listen(PORT, () => console.log(`Backend running at http://localhost:${PORT}`));
-
   });
 }
 

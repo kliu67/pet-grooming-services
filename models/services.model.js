@@ -5,7 +5,7 @@ import { isIdValidNumeric } from  "../validators/validator.js";
 
 export async function findAll(){
     const { rows } = await pool.query(
-        `SELECT id, name, base_price, uuid, created_at FROM services`
+        `SELECT id, name, base_price, description, uuid, created_at FROM services`
     )
     return rows ?? null;
 }
@@ -15,13 +15,9 @@ export async function findAll(){
  */
 export async function findById(id) {
 
-    // if(!isIdValidNumeric(id)){
-    //      throw new Error(`data validation error: id ${id} is invalid`);
-    // }
-
     const sanitizedId = validateNumericId(id);
     const {rows} = await pool.query(
-        `SELECT id, name, base_price, uuid, created_at FROM services
+        `SELECT id, name, base_price, description, uuid, created_at FROM services
         WHERE id = $1`,
         [sanitizedId]
     );
@@ -35,12 +31,16 @@ export async function findById(id) {
  * @param {create service} param0 
  * @returns 
  */
-export async function create({name, base_price}){
+export async function create({name, base_price, description}){
     //name cannot be empty, null or undefined
     if(!name){
         throw new Error('data validation error: name cannot be empty, null, or undefined')
     }
 
+    //description cannot be empty, null or undefined
+    if(!description){
+        throw new Error('data validation error: description cannot be empty, null, or undefined')
+    }
     //base_price cannot be null or undefined
     if(isNaN(Number(base_price))){
         throw new Error('data validation error: base_price cannot be null, or undefined')
@@ -52,10 +52,10 @@ export async function create({name, base_price}){
 
     try{
         const { rows } = await pool.query(
-            `INSERT INTO services(name, base_price)
-            VALUES ($1, $2)
+            `INSERT INTO services(name, base_price, description)
+            VALUES ($1, $2, $3)
             RETURNING id, name, base_price, uuid, created_at`,
-            [name, base_price]
+            [name, base_price, description]
         )
         return rows[0] ?? null;
     }
@@ -71,12 +71,16 @@ export async function create({name, base_price}){
     }
 }
 
-export async function update(id, {name='', base_price=''}){
+export async function update(id, {name='', description='', base_price=''}){
   if (!isIdValidNumeric(id)) {
     throw new Error(`data validation error: id ${id} is invalid`);
   }
     if(!name){
         throw new Error('data validation error: name cannot be empty, null, or undefined')
+    }
+
+    if(!description){
+        throw new Error('data validation error: description cannot be empty, null, or undefined')
     }
 
      if(isNaN(Number(base_price))){
@@ -90,10 +94,10 @@ export async function update(id, {name='', base_price=''}){
     const {rows} = await pool.query(
         `
         UPDATE services
-        SET name = $1, base_price = $2
-        WHERE id = $3
+        SET name = $1, base_price = $2, description = $3
+        WHERE id = $4
         RETURNING *`,
-        [name, base_price, id]
+        [name, base_price, description, id]
     )
     
     if(!rows[0]){

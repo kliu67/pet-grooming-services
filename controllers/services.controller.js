@@ -38,8 +38,8 @@ export async function getServiceById(req, res) {
  */
 export async function createService(req, res) {
   try {
-    const { name, base_price } = req.body;
-    const newService = await Service.create({ name, base_price });
+    const { name, base_price, description } = req.body;
+    const newService = await Service.create({ name, base_price, description });
 
     return res.status(201).json(newService);
   } catch (err) {
@@ -56,9 +56,9 @@ export async function createService(req, res) {
 export async function updateService(req, res) {
   try {
     const { id } = req.params;
-    const { name, base_price } = req.body;
+    const { name, base_price, description } = req.body;
 
-    const updated = await Service.update(id, { name, base_price });
+    const updated = await Service.update(id, { name, base_price, description });
     return res.status(200).json(updated);
   } catch (err) {
     if (err.message.includes("not found")) {

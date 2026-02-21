@@ -1,11 +1,13 @@
-export function validateServiceInput({ name, base_price }) {
+import { MAX_NAME_LENGTH, MAX_DESCRIPTION_LENGTH } from "../utils/constants";
+
+export function validateServiceInput({ name, base_price, description }) {
   const errors = [];
 
   if (!name || name.trim().length === 0) {
     errors.push("Name cannot be empty");
   }
 
-  if (name && name.length > 60) {
+  if (name && name.length > MAX_NAME_LENGTH) {
     errors.push("Name must be 60 characters or fewer");
   }
 
@@ -15,6 +17,14 @@ export function validateServiceInput({ name, base_price }) {
 
   if (Number(base_price) <= 0) {
     errors.push("Base price must be positive");
+  }
+
+  if (!description || description.trim().length === 0) {
+    errors.push("Description cannot be empty");
+  }
+
+  if (description && description.length > MAX_DESCRIPTION_LENGTH) {
+    errors.push("Name must be 60 characters or fewer");
   }
 
   if (errors.length > 0) {

@@ -1,3 +1,4 @@
+import { MAX_NAME_LENGTH, MAX_DESCRIPTION_LENGTH } from "../utils/constants";
 export function isIdValidNumeric(id) {
   //number cannot be undefined or null
    if (id === undefined || id === null) {
