@@ -1,0 +1,37 @@
+{
+    "services":[
+        {
+            "name": "nail clipping",
+            "base_price": "15",
+            "description": "Quick nail trimming and filing, preventing overgrowth, splitting, and discomfort"
+        },
+        {
+            "name": "Ear cleaning",
+            "base_price": "10",
+            "description": "Remove wax and debris, help prevent infections and odor, and keep your dog’s ears healthy and comfortable."
+        },
+                {
+            "name": "Hair detangling",
+            "base_price": "15",
+            "description": "Remove mats and knots. Keeps your dog’s coat smooth, healthy, and easy to maintain."
+        },
+                {
+            "name": "Teeth brushing",
+            "base_price": "15",
+            "description": "Remove plaque and buildup and help prevent bad breath and dental issues."
+        },
+
+        {
+            "name": "Basic grooming",
+            "base_price": "45",
+            "description": "Includes: nail clipping, ear cleaning, paw trimming, private part trimming, shampoo/conditioning and drying."
+        },
+
+        {
+            "name": "Full grooming",
+            "base_price": "55",
+            "description": "Includes everything provided in basic grooming PLUS hair trimming and styling."
+        }
+    ]
+
+}
