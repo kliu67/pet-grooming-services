@@ -28,7 +28,7 @@ async function seedSpecies() {
         VALUES ($1)
         ON CONFLICT (name) DO NOTHING
         `,
-        [s.name]
+        [s]
       );
     }
 
