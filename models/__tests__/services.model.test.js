@@ -113,7 +113,7 @@ describe('create', () => {
   it('handles unique violation error', async () => {
     pool.query.mockRejectedValue({
       code: '23505',
-      details: 'Key (name) already exists',
+      detail: 'Key (name) already exists',
     });
 
     await expect(create({ name: 'Wash', base_price: 10, description: 'some description' }))

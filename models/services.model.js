@@ -63,7 +63,7 @@ export async function create({name, base_price, description}){
     catch(err){
         //unique violation code
         if(err.code === '23505'){
-            if(err.details.includes('name')){
+            if(err.detail.includes('name')){
                 throw new Error(`data validation error: Service with name ${name} already exists`);
             }
         }
