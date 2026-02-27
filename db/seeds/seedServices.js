@@ -33,7 +33,7 @@ async function seedSpecies() {
           );
         }
     
-        console.log("✅ Species seeded successfully");
+        console.log("✅ Services seeded successfully");
       } catch (err) {
         console.error("❌ Seed failed:", err);
       } finally {
