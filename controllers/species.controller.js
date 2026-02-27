@@ -53,6 +53,28 @@ export async function createSpecies(req, res) {
   }
 }
 
+/** *UPDATE /species/:id
+ * 
+ */
+export async function updateSpecies(req, res) {
+  console.log("Incoming body:", req.body);
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+
+    const updated = await Species.update(id, { name });
+    return res.status(200).json(updated);
+  } catch (err) {
+    if (err.message.includes("not found")) {
+      return res.status(404).json({ error: err.message });
+    }
+    if (err.message.includes("validation")) {
+      return res.status(400).json({ error: err.message });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 /**
  * DELETE /species/:id
  */

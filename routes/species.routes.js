@@ -4,6 +4,7 @@ import {
   getSpeciesById,
   createSpecies,
   deleteSpecies,
+  updateSpecies
 } from "../controllers/species.controller.js";
 
 const speciesRoutes = express.Router();
@@ -16,6 +17,9 @@ speciesRoutes.get("/:id", getSpeciesById);
 
 /* Create species */
 speciesRoutes.post("/", createSpecies);
+
+/* Update species */
+speciesRoutes.put("/:id", updateSpecies);
 
 /* Delete species */
 speciesRoutes.delete("/:id", deleteSpecies);

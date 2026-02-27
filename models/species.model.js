@@ -1,4 +1,6 @@
 import { pool } from '../db.js';
+import { isIdValidNumeric } from  "../validators/validator.js";
+
 
 function normalizeName(name) {
   if (typeof name !== 'string' || name.trim() === '') {
@@ -57,6 +59,30 @@ export async function create(name) {
     }
     throw err;
   }
+}
+
+export async function update(id, {name=''}){
+  if (!isIdValidNumeric(id)) {
+    throw new Error(`data validation error: id ${id} is invalid`);
+  }
+    if(!name){
+        throw new Error('data validation error: name cannot be empty, null, or undefined')
+    }
+
+    const {rows} = await pool.query(
+        `
+        UPDATE species
+        SET name = $1
+        WHERE id = $2
+        RETURNING *`,
+        [name, id]
+    )
+    
+    if(!rows[0]){
+        throw new Error(`Service with id ${id} not found`);
+    }
+
+    return rows[0];
 }
 
 /**
