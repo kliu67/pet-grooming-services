@@ -138,17 +138,17 @@ describe('create', () => {
     })).rejects.toThrow('email already exists');
   });
 
-  it('handles duplicate phone', async () => {
+  it('handles duplicate first_name + last_name + phone combination', async () => {
     pool.query.mockRejectedValue({
       code: '23505',
-      constraint: 'users_phone_key',
+      constraint: 'users_first_name_last_name_phone_key',
     });
 
     await expect(create({
       first_name: 'John',
       last_name: 'Doe',
       phone: '123456'
-    })).rejects.toThrow('phone already exists');
+    })).rejects.toThrow('user with this first name, last name, and phone already exists');
   });
 });
 
@@ -201,6 +201,17 @@ describe('update', () => {
     await expect(update(1, { email: 'a@test.com' }))
       .rejects
       .toThrow('email already exists');
+  });
+
+  it('handles duplicate first_name + last_name + phone combination', async () => {
+    pool.query.mockRejectedValue({
+      code: '23505',
+      constraint: 'users_first_name_last_name_phone_key',
+    });
+
+    await expect(update(1, { first_name: 'John', last_name: 'Doe', phone: '123456' }))
+      .rejects
+      .toThrow('user with this first name, last name, and phone already exists');
   });
 });
 

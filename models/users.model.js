@@ -88,11 +88,11 @@ export async function create({ first_name, last_name, email, phone, description 
       throw new Error('email already exists');
     }
 
-    if (err.constraint === 'users_phone_key') {
-      throw new Error('phone already exists');
+    if (err.constraint === 'users_first_name_last_name_phone_key') {
+      throw new Error('user with this first name, last name, and phone already exists');
     }
 
-    throw new Error('duplicate user data');;
+    throw new Error('duplicate user data');
   }
   throw err
   }
@@ -219,8 +219,8 @@ export async function update(id, updates) {
       if (err.constraint === 'users_email_key') {
         throw new Error('email already exists');
       }
-      if (err.constraint === 'users_phone_key') {
-        throw new Error('phone already exists');
+      if (err.constraint === 'users_first_name_last_name_phone_key') {
+        throw new Error('user with this first name, last name, and phone already exists');
       }
       throw new Error('duplicate user data');
     }
@@ -258,3 +258,4 @@ export async function remove(id) {
     throw err; // never swallow unknown DB errors
   }
 }
+
