@@ -54,6 +54,7 @@ export async function createService(req, res) {
  * PUT /services/:id
  */
 export async function updateService(req, res) {
+  console.log("Incoming body:", req.body);
   try {
     const { id } = req.params;
     const { name, base_price, description } = req.body;
