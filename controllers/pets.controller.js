@@ -17,6 +17,15 @@ export async function getPetsByOwner(req, res) {
   }
 }
 
+export async function getAllPets(req, res) {
+  try {
+     const pets = await Pet.findAll();
+     return res.status(200).json(pets ?? []);
+   } catch (err) {
+     return res.status(500).json({ error: err.message });
+   }
+}
+
 /**
  * GET /pets/:id
  */

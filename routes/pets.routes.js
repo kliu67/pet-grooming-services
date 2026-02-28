@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  getAllPets,
   getPetsByOwner,
   getPetById,
   createPet,
@@ -9,6 +10,8 @@ import {
 
 const petRoute = express.Router();
 
+/* Get all pets */
+petRoute.get("/", getAllPets);
 /* Get all pets for a user */
 petRoute.get("/owner/:ownerId", getPetsByOwner);
 
