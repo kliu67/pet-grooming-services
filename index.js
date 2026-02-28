@@ -44,7 +44,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/users", userRoutes);
 app.use("/services", serviceRoutes);
-app.use("/pets", petRoutes);
+app.use("/api/pets", petRoutes);
 app.use("/species", speciesRoutes);
 app.use("/weightClasses", weightClassRoutes);
 app.use("/serviceConfigurations", serviceConfigurationRoutes);
