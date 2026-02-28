@@ -7,7 +7,7 @@ import { MAX_NAME_LENGTH } from "../utils/constants.js";
  */
 export async function findAll() {
   const { rows } = await pool.query(
-    "SELECT id, first_name, last_name, email, phone, description, created_at FROM users ORDER BY id DESC"
+    "SELECT id, first_name, last_name, email, phone, description, created_at FROM users ORDER BY id"
   );
   return rows;
 }
@@ -88,7 +88,10 @@ export async function create({ first_name, last_name, email, phone, description 
       throw new Error('email already exists');
     }
 
-    if (err.constraint === 'users_first_name_last_name_phone_key') {
+    if (
+      err.constraint === 'users_first_name_last_name_phone_key' ||
+      err.constraint === 'users_first_name_last_name_phone_ci_key'
+    ) {
       throw new Error('user with this first name, last name, and phone already exists');
     }
 
@@ -219,7 +222,10 @@ export async function update(id, updates) {
       if (err.constraint === 'users_email_key') {
         throw new Error('email already exists');
       }
-      if (err.constraint === 'users_first_name_last_name_phone_key') {
+      if (
+        err.constraint === 'users_first_name_last_name_phone_key' ||
+        err.constraint === 'users_first_name_last_name_phone_ci_key'
+      ) {
         throw new Error('user with this first name, last name, and phone already exists');
       }
       throw new Error('duplicate user data');
