@@ -14,7 +14,8 @@
     "migrate": "node db/migrate.js",
     "seed:species": "node db/seeds/seedSpecies.js",
     "seed:services": "node db/seeds/seedServices.js",
-    "seed:clients": "node db/seeds/seedClients.js"
+    "seed:clients": "node db/seeds/seedClients.js",
+    "seed:pets": "node db/seeds/seedPets.js"
   },
   "keywords": [],
   "author": "",
