@@ -35,7 +35,7 @@ describe('book()', () => {
   it('creates appointment successfully', async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({ rows: [{ id: 1, species: 1, weight_class: 1 }] }) // pet lock
+      .mockResolvedValueOnce({ rows: [{ id: 1, breed: 1, weight_class: 1 }] }) // pet lock
       .mockResolvedValueOnce({ rows: [{ price: 50, duration_minutes: 60 }] }) // config
       .mockResolvedValueOnce({ rows: [{ id: 99 }] }) // insert
       .mockResolvedValueOnce(); // COMMIT
@@ -54,7 +54,7 @@ describe('book()', () => {
   it('throws overlap error (23P01)', async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({ rows: [{ id: 1, species: 1, weight_class: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1, breed: 1, weight_class: 1 }] })
       .mockResolvedValueOnce({ rows: [{ price: 50, duration_minutes: 60 }] })
       .mockRejectedValueOnce({ code: '23P01' }) // insert overlap
       .mockResolvedValueOnce(); // ROLLBACK
@@ -170,7 +170,7 @@ describe('concurrency simulation', () => {
   if (sql === 'ROLLBACK') return;
 
   if (sql.includes('FROM pets')) {
-    return { rows: [{ id: 1, species: 1, weight_class: 1 }] };
+    return { rows: [{ id: 1, breed: 1, weight_class: 1 }] };
   }
 
   if (sql.includes('FROM service_configurations')) {

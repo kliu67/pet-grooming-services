@@ -29,7 +29,7 @@ function validateId(id) {
  */
 export async function findAll() {
   const { rows } = await pool.query(
-    "SELECT id, name, species, owner, uuid, weight_class_id, created_at, updated_at FROM pets ORDER BY id DESC"
+    "SELECT id, name, breed, owner, uuid, weight_class_id, created_at, updated_at FROM pets ORDER BY id DESC"
   );
   return rows;
 }
@@ -40,9 +40,9 @@ export async function findByOwner(ownerId) {
   const { rows } = await pool.query(
     `
     SELECT p.id, p.name, p.uuid, p.created_at, p.updated_at, p.weight_class_id
-           s.id AS species_id, s.name AS species
+           s.id AS breed_id, s.name AS breed
     FROM pets p
-    JOIN species s ON p.species = s.id
+    JOIN breeds s ON p.breed = s.id
     WHERE p.owner = $1
     ORDER BY p.created_at DESC
     `,
@@ -60,7 +60,7 @@ export async function findById(id) {
 
   const { rows } = await pool.query(
     `
-    SELECT id, name, species, owner, weight_class_id, uuid, created_at, updated_at
+    SELECT id, name, breed, owner, weight_class_id, uuid, created_at, updated_at
     FROM pets
     WHERE id = $1
     `,
@@ -73,9 +73,9 @@ export async function findById(id) {
 /**
  * Create pet
  */
-export async function create({ name, species, owner, weightClassId }) {
+export async function create({ name, breed, owner, weightClassId }) {
   const normalizedName = normalizeName(name);
-  const speciesId = validateId(species);
+  const breedId = validateId(breed);
   const ownerId = validateId(owner);
   if (weightClassId) {
     const validatedWeightClassId = validateId(weightClassId);
@@ -99,18 +99,18 @@ export async function create({ name, species, owner, weightClassId }) {
   try {
     const { rows } = await pool.query(
       `
-      INSERT INTO pets (name, species, owner, weight_class_id)
+      INSERT INTO pets (name, breed, owner, weight_class_id)
       VALUES ($1, $2, $3, $4)
-      RETURNING id, name, species, owner, weight_class_id, uuid, created_at, updated_at
+      RETURNING id, name, breed, owner, weight_class_id, uuid, created_at, updated_at
       `,
-      [normalizedName, speciesId, ownerId, weightClassId]
+      [normalizedName, breedId, ownerId, weightClassId]
     );
 
     return rows[0];
   } catch (err) {
     // FK violation
     if (err.code === "23503") {
-      throw new Error("invalid species or owner");
+      throw new Error("invalid breed or owner");
     }
     throw err;
   }
@@ -137,11 +137,27 @@ export async function update(id, updates) {
     values.push(normalized);
   }
 
-  // ---- species ----
-  if ("species" in updates) {
-    const speciesId = validateId(updates.species);
-    fields.push(`species = $${index++}`);
-    values.push(speciesId);
+  if("owner" in updates){
+    const ownerId = validateId(updates.owner);
+    fields.push(`owner = $${index++}`);
+    values.push(ownerId);
+
+      try {
+      await pool.query(`SELECT id FROM users WHERE id = $1`, [
+        ownerId
+      ]);
+    } catch (err) {
+      if (err.code === "23503") {
+        throw new Error("Invalid owner");
+      }
+    }
+  }
+
+  // ---- breed ----
+  if ("breed" in updates) {
+    const breedId = validateId(updates.breed);
+    fields.push(`breed = $${index++}`);
+    values.push(breedId);
   }
 
   if ("weightClassId" in updates) {
@@ -174,7 +190,7 @@ export async function update(id, updates) {
       SET ${fields.join(", ")},
           updated_at = NOW()
       WHERE id = $${index}
-      RETURNING id, name, species, owner, uuid, weight_class_id, created_at, updated_at
+      RETURNING id, name, breed, owner, uuid, weight_class_id, created_at, updated_at
       `,
       values
     );
@@ -186,7 +202,7 @@ export async function update(id, updates) {
     return rows[0];
   } catch (err) {
     if (err.code === "23503") {
-      throw new Error("invalid species");
+      throw new Error("invalid breed");
     }
     throw err;
   }

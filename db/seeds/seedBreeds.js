@@ -13,9 +13,9 @@ const pool = new Pool({
   port: Number(process.env.DB_PORT)
 });
 
-async function seedSpecies() {
+async function seedBreeds() {
   try {
-    const filePath = path.resolve("db/seeds/species.json");
+    const filePath = path.resolve("db/seeds/breeds.json");
     const raw = await fs.readFile(filePath, "utf-8");
     const dogsList = JSON.parse(raw).dogs;
 
@@ -24,7 +24,7 @@ async function seedSpecies() {
     for (const s of dogsList) {
       await pool.query(
         `
-        INSERT INTO species (name)
+        INSERT INTO breed (name)
         VALUES ($1)
         ON CONFLICT (name) DO NOTHING
         `,
@@ -32,7 +32,7 @@ async function seedSpecies() {
       );
     }
 
-    console.log("✅ Species seeded successfully");
+    console.log("✅ Breeds seeded successfully");
   } catch (err) {
     console.error("❌ Seed failed:", err);
   } finally {
@@ -40,4 +40,4 @@ async function seedSpecies() {
   }
 }
 
-seedSpecies();
+seedBreeds();

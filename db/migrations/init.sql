@@ -13,21 +13,21 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
         );
 
- CREATE TABLE IF NOT EXISTS species (
+ CREATE TABLE IF NOT EXISTS breeds (
     id SERIAL PRIMARY KEY,
     name VARCHAR(60) NOT NULL
       CHECK (length(trim(name)) > 0),
     created_at TIMESTAMP DEFAULT NOW()
   );
 
-   CREATE UNIQUE INDEX IF NOT EXISTS species_name_lower_unique
-    ON species (LOWER(name));
+   CREATE UNIQUE INDEX IF NOT EXISTS breeds_name_lower_unique
+    ON breeds (LOWER(name));
 
    CREATE TABLE IF NOT EXISTS pets(
         id SERIAL PRIMARY KEY,
         name VARCHAR(60) NOT NULL
           CHECK (length(trim(name)) > 0),
-        species INTEGER NOT NULL REFERENCES species(id),
+        breeds INTEGER NOT NULL REFERENCES breeds(id),
         owner INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         uuid UUID UNIQUE DEFAULT gen_random_uuid(),
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
         );
     
     CREATE INDEX IF NOT EXISTS idx_pets_owner   ON pets(owner);
-    CREATE INDEX IF NOT EXISTS idx_pets_species ON pets(species);
+    CREATE INDEX IF NOT EXISTS idx_pets_breeds ON pets(breeds);
 
       CREATE TABLE IF NOT EXISTS services(
         id SERIAL PRIMARY KEY,
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
         
 
            CREATE TABLE IF NOT EXISTS service_configurations (
-        species_id INTEGER NOT NULL REFERENCES species(id) ON DELETE CASCADE,
+        breeds_id INTEGER NOT NULL REFERENCES breeds(id) ON DELETE CASCADE,
         service_id INTEGER NOT NULL REFERENCES services(id) ON DELETE CASCADE,
         weight_class_id INTEGER NOT NULL REFERENCES weight_classes(id) ON DELETE CASCADE,
         
@@ -103,10 +103,10 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP,
-        PRIMARY KEY (species_id, service_id, weight_class_id));
+        PRIMARY KEY (breeds_id, service_id, weight_class_id));
 
-        CREATE INDEX IF NOT EXISTS idx_cfg_species_service 
-        ON service_configurations (species_id, service_id);
+        CREATE INDEX IF NOT EXISTS idx_cfg_breeds_service 
+        ON service_configurations (breeds_id, service_id);
 
         CREATE INDEX IF NOT EXISTS idx_cfg_service
         ON service_configurations (service_id);

@@ -44,7 +44,7 @@ describe('findOne', () => {
   });
 
   it('throws on invalid id', async () => {
-    await expect(findOne(0, 1, 1)).rejects.toThrow('invalid species_id');
+    await expect(findOne(0, 1, 1)).rejects.toThrow('invalid breed_id');
   });
 });
 
@@ -57,7 +57,7 @@ describe('create', () => {
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
     const result = await create({
-      species_id: 1,
+      breed_id: 1,
       service_id: 2,
       weight_class_id: 3,
       price: 15,
@@ -72,7 +72,7 @@ describe('create', () => {
     pool.query.mockRejectedValue({ code: '23505' });
 
     await expect(create({
-      species_id: 1,
+      breed_id: 1,
       service_id: 2,
       weight_class_id: 3,
       price: 10,
@@ -84,17 +84,17 @@ describe('create', () => {
     pool.query.mockRejectedValue({ code: '23503' });
 
     await expect(create({
-      species_id: 999,
+      breed_id: 999,
       service_id: 2,
       weight_class_id: 3,
       price: 10,
       duration_minutes: 30,
-    })).rejects.toThrow('invalid species, service, or weight class');
+    })).rejects.toThrow('invalid breed, service, or weight class');
   });
 
   it('throws on invalid price', async () => {
     await expect(create({
-      species_id: 1,
+      breed_id: 1,
       service_id: 2,
       weight_class_id: 3,
       price: -1,
@@ -104,7 +104,7 @@ describe('create', () => {
 
   it('throws on invalid duration', async () => {
     await expect(create({
-      species_id: 1,
+      breed_id: 1,
       service_id: 2,
       weight_class_id: 3,
       price: 10,
@@ -262,14 +262,14 @@ describe('concurrency', () => {
 
     const tasks = [
       create({
-        species_id: 1,
+        breed_id: 1,
         service_id: 2,
         weight_class_id: 3,
         price: 10,
         duration_minutes: 30,
       }),
       create({
-        species_id: 1,
+        breed_id: 1,
         service_id: 2,
         weight_class_id: 3,
         price: 10,

@@ -43,7 +43,7 @@ export async function book({
     // ---- Lock pet row (prevents concurrent booking races) ----
     const petRes = await client.query(
       `
-      SELECT id, species, weight_class
+      SELECT id, breed, weight_class
       FROM pets
       WHERE id = $1
       FOR UPDATE
@@ -55,19 +55,19 @@ export async function book({
       throw new Error('pet not found');
     }
 
-    const { species, weight_class } = petRes.rows[0];
+    const { breed, weight_class } = petRes.rows[0];
 
     // ---- Fetch active service configuration ----
     const cfgRes = await client.query(
       `
       SELECT price, duration_minutes
       FROM service_configurations
-      WHERE species_id = $1
+      WHERE breed_id = $1
         AND service_id = $2
         AND weight_class_id = $3
         AND is_active = TRUE
       `,
-      [species, serviceId, weight_class]
+      [breed, serviceId, weight_class]
     );
 
     if (!cfgRes.rows[0]) {

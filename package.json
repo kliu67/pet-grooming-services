@@ -12,7 +12,7 @@
     "vitest": "vitest",
     "vitest:coverage": "vitest run --coverage",
     "migrate": "node db/migrate.js",
-    "seed:species": "node db/seeds/seedSpecies.js",
+    "seed:breeds": "node db/seeds/seedBreeds.js",
     "seed:services": "node db/seeds/seedServices.js",
     "seed:clients": "node db/seeds/seedClients.js",
     "seed:pets": "node db/seeds/seedPets.js"

@@ -23,8 +23,8 @@ describe("Pet Routes", () => {
   describe("GET /pets/owner/:ownerId", () => {
     it("returns pets for owner", async () => {
       const mockPets = [
-        { id: 1, name: "Buddy", species: "Dog" },
-        { id: 2, name: "Kitty", species: "Cat" },
+        { id: 1, name: "Buddy", breed: "Dog" },
+        { id: 2, name: "Kitty", breed: "Cat" },
       ];
 
       Pet.findByOwner.mockResolvedValue(mockPets);
@@ -87,7 +87,7 @@ describe("Pet Routes", () => {
       const newPet = {
         id: 1,
         name: "Buddy",
-        species: 1,
+        breed: 1,
         owner: 1,
       };
 
@@ -95,13 +95,13 @@ describe("Pet Routes", () => {
 
       const res = await request(app)
         .post("/pets")
-        .send({ name: "Buddy", species: 1, owner: 1 });
+        .send({ name: "Buddy", breed: 1, owner: 1 });
 
       expect(res.status).toBe(201);
       expect(res.body).toEqual(newPet);
       expect(Pet.create).toHaveBeenCalledWith({
         name: "Buddy",
-        species: 1,
+        breed: 1,
         owner: 1,
       });
     });
@@ -111,7 +111,7 @@ describe("Pet Routes", () => {
 
       const res = await request(app)
         .post("/pets")
-        .send({ name: "", species: 1, owner: 1 });
+        .send({ name: "", breed: 1, owner: 1 });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBeDefined();
@@ -126,7 +126,7 @@ describe("Pet Routes", () => {
       const updatedPet = {
         id: 1,
         name: "Buddy Updated",
-        species: 1,
+        breed: 1,
         owner: 1,
       };
 

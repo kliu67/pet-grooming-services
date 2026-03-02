@@ -23,5 +23,5 @@ BEGIN
     EXECUTE FUNCTION set_updated_at();
   END IF;
 
-  ALTER TABLE species ADD CONSTRAINT species_name_unique UNIQUE (name);
+  ALTER TABLE breeds ADD CONSTRAINT breeds_name_unique UNIQUE (name);
 END$$;

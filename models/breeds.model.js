@@ -4,23 +4,23 @@ import { isIdValidNumeric } from  "../validators/validator.js";
 
 function normalizeName(name) {
   if (typeof name !== 'string' || name.trim() === '') {
-    throw new Error('invalid species name');
+    throw new Error('invalid breed name');
   }
   return name.trim();
 }
 
 /**
- * Get all species
+ * Get all breeds
  */
 export async function findAll() {
   const { rows } = await pool.query(
-    `SELECT id, name, created_at FROM species ORDER BY name ASC`
+    `SELECT id, name, created_at FROM breeds ORDER BY name ASC`
   );
   return rows;
 }
 
 /**
- * Get species by id
+ * Get breed by id
  */
 export async function findById(id) {
   const numericId = Number(id);
@@ -29,7 +29,7 @@ export async function findById(id) {
   }
 
   const { rows } = await pool.query(
-    `SELECT id, name, created_at FROM species WHERE id = $1`,
+    `SELECT id, name, created_at FROM breeds WHERE id = $1`,
     [numericId]
   );
 
@@ -37,7 +37,7 @@ export async function findById(id) {
 }
 
 /**
- * Create species
+ * Create breed
  */
 export async function create(name) {
   const normalized = normalizeName(name);
@@ -45,7 +45,7 @@ export async function create(name) {
   try {
     const { rows } = await pool.query(
       `
-      INSERT INTO species (name)
+      INSERT INTO breeds (name)
       VALUES ($1)
       RETURNING id, name, created_at
       `,
@@ -55,7 +55,7 @@ export async function create(name) {
     return rows[0];
   } catch (err) {
     if (err.code === '23505') {
-      throw new Error('species already exists');
+      throw new Error('breed already exists');
     }
     throw err;
   }
@@ -71,7 +71,7 @@ export async function update(id, {name=''}){
 
     const {rows} = await pool.query(
         `
-        UPDATE species
+        UPDATE breeds
         SET name = $1
         WHERE id = $2
         RETURNING *`,
@@ -86,7 +86,7 @@ export async function update(id, {name=''}){
 }
 
 /**
- * Delete species (only if not referenced)
+ * Delete breed (only if not referenced)
  */
 export async function remove(id) {
   const numericId = Number(id);
@@ -96,19 +96,19 @@ export async function remove(id) {
 
   try {
     const { rowCount } = await pool.query(
-      `DELETE FROM species WHERE id = $1`,
+      `DELETE FROM breeds WHERE id = $1`,
       [numericId]
     );
 
     if (rowCount === 0) {
-      throw new Error('species not found');
+      throw new Error('breed not found');
     }
 
     return true;
   } catch (err) {
-    // FK violation → species in use by pets
+    // FK violation → breed in use by pets
     if (err.code === '23503') {
-      throw new Error('cannot delete species in use');
+      throw new Error('cannot delete breed in use');
     }
     throw err;
   }

@@ -70,20 +70,20 @@ describe("findById", () => {
 //
 describe("create", () => {
   it("throws if name invalid", async () => {
-    await expect(create({ name: "", species: 1, owner: 1 })).rejects.toThrow(
+    await expect(create({ name: "", breed: 1, owner: 1 })).rejects.toThrow(
       "pet name cannot be empty"
     );
   });
 
-  it("throws if species invalid", async () => {
+  it("throws if breed invalid", async () => {
     await expect(
-      create({ name: "Buddy", species: 0, owner: 1 })
+      create({ name: "Buddy", breed: 0, owner: 1 })
     ).rejects.toThrow("invalid id");
   });
 
   it("throws if owner invalid", async () => {
     await expect(
-      create({ name: "Buddy", species: 1, owner: 0 })
+      create({ name: "Buddy", breed: 1, owner: 0 })
     ).rejects.toThrow("invalid id");
   });
 
@@ -93,7 +93,7 @@ describe("create", () => {
 
     const result = await create({
       name: "Buddy",
-      species: 1,
+      breed: 1,
       owner: 1
     });
 
@@ -107,10 +107,10 @@ describe("create", () => {
     await expect(
       create({
         name: "Buddy",
-        species: 999,
+        breed: 999,
         owner: 1
       })
-    ).rejects.toThrow("invalid species or owner");
+    ).rejects.toThrow("invalid breed or owner");
   });
 });
 
@@ -120,7 +120,7 @@ it("handles invalid weight class FK", async () => {
   await expect(
     create({
       name: "Buddy",
-      species: 1,
+      breed: 1,
       owner: 1,
       weightClassId: 999,
     })
@@ -156,11 +156,11 @@ describe("update", () => {
     await expect(update(1, { name: "Buddy" })).rejects.toThrow("pet not found");
   });
 
-  it("handles invalid species FK", async () => {
+  it("handles invalid breed FK", async () => {
     pool.query.mockRejectedValue({ code: "23503" });
 
-    await expect(update(1, { species: 999 })).rejects.toThrow(
-      "invalid species"
+    await expect(update(1, { breed: 999 })).rejects.toThrow(
+      "invalid breed"
     );
   });
 

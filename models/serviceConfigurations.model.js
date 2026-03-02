@@ -31,17 +31,17 @@ function validateDuration(minutes) {
 /**
  * Get configuration by composite key
  */
-export async function findOne(speciesId, serviceId, weightClassId) {
-  const sid = validateId(speciesId, 'species_id');
+export async function findOne(breedId, serviceId, weightClassId) {
+  const sid = validateId(breedId, 'breed_id');
   const srv = validateId(serviceId, 'service_id');
   const wid = validateId(weightClassId, 'weight_class_id');
 
   const { rows } = await pool.query(
     `
-    SELECT species_id, service_id, weight_class_id,
+    SELECT breed_id, service_id, weight_class_id,
            price, duration_minutes, is_active
     FROM service_configurations
-    WHERE species_id = $1
+    WHERE breed_id = $1
       AND service_id = $2
       AND weight_class_id = $3
     `,
@@ -55,14 +55,14 @@ export async function findOne(speciesId, serviceId, weightClassId) {
  * Create configuration
  */
 export async function create({
-  species_id,
+  breed_id,
   service_id,
   weight_class_id,
   price,
   duration_minutes,
   is_active = true,
 }) {
-  const sid = validateId(species_id, 'species_id');
+  const sid = validateId(breed_id, 'breed_id');
   const srv = validateId(service_id, 'service_id');
   const wid = validateId(weight_class_id, 'weight_class_id');
   const p = validatePrice(price);
@@ -72,9 +72,9 @@ export async function create({
     const { rows } = await pool.query(
       `
       INSERT INTO service_configurations
-        (species_id, service_id, weight_class_id, price, duration_minutes, is_active)
+        (breed_id, service_id, weight_class_id, price, duration_minutes, is_active)
       VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING species_id, service_id, weight_class_id,
+      RETURNING breed_id, service_id, weight_class_id,
                 price, duration_minutes, is_active
       `,
       [sid, srv, wid, p, d, is_active]
@@ -87,7 +87,7 @@ export async function create({
       throw new Error('configuration already exists');
     }
     if (err.code === '23503') {
-      throw new Error('invalid species, service, or weight class');
+      throw new Error('invalid breed, service, or weight class');
     }
     throw err;
   }
@@ -97,12 +97,12 @@ export async function create({
  * Update configuration (partial update allowed)
  */
 export async function update(
-  speciesId,
+  breedId,
   serviceId,
   weightClassId,
   updates
 ) {
-  const sid = validateId(speciesId, 'species_id');
+  const sid = validateId(breedId, 'breed_id');
   const srv = validateId(serviceId, 'service_id');
   const wid = validateId(weightClassId, 'weight_class_id');
 
@@ -139,10 +139,10 @@ export async function update(
     `
     UPDATE service_configurations
     SET ${fields.join(', ')}
-    WHERE species_id = $${index}
+    WHERE breed_id = $${index}
       AND service_id = $${index + 1}
       AND weight_class_id = $${index + 2}
-    RETURNING species_id, service_id, weight_class_id,
+    RETURNING breed_id, service_id, weight_class_id,
               price, duration_minutes, is_active
     `,
     values
@@ -158,15 +158,15 @@ export async function update(
 /**
  * Delete configuration
  */
-export async function remove(speciesId, serviceId, weightClassId) {
-  const sid = validateId(speciesId, 'species_id');
+export async function remove(breedId, serviceId, weightClassId) {
+  const sid = validateId(breedId, 'breed_id');
   const srv = validateId(serviceId, 'service_id');
   const wid = validateId(weightClassId, 'weight_class_id');
 
   const { rowCount } = await pool.query(
     `
     DELETE FROM service_configurations
-    WHERE species_id = $1
+    WHERE breed_id = $1
       AND service_id = $2
       AND weight_class_id = $3
     `,
@@ -185,8 +185,8 @@ export async function remove(speciesId, serviceId, weightClassId) {
 /**
  * Get price/duration for a pet (most common lookup)
  */
-export async function getActiveConfig(speciesId, serviceId, weightClassId) {
-  const config = await findOne(speciesId, serviceId, weightClassId);
+export async function getActiveConfig(breedId, serviceId, weightClassId) {
+  const config = await findOne(breedId, serviceId, weightClassId);
   if (!config || !config.is_active) return null;
   return config;
 }
@@ -199,11 +199,11 @@ export async function findByService(serviceId) {
 
   const { rows } = await pool.query(
     `
-    SELECT species_id, service_id, weight_class_id,
+    SELECT breed_id, service_id, weight_class_id,
            price, duration_minutes, is_active
     FROM service_configurations
     WHERE service_id = $1
-    ORDER BY species_id, weight_class_id
+    ORDER BY breed_id, weight_class_id
     `,
     [srv]
   );

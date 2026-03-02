@@ -1,30 +1,30 @@
-import * as Species from "../models/species.model.js";
+import * as Breed from "../models/breeds.model.js";
 
 /**
- * GET /species
+ * GET /breed
  */
-export async function getAllSpecies(req, res) {
+export async function getAllBreeds(req, res) {
   try {
-    const species = await Species.findAll();
-    return res.status(200).json(species);
+    const breed = await Breed.findAll();
+    return res.status(200).json(breed);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 }
 
 /**
- * GET /species/:id
+ * GET /breed/:id
  */
-export async function getSpeciesById(req, res) {
+export async function getBreedById(req, res) {
   try {
     const { id } = req.params;
-    const species = await Species.findById(id);
+    const breed = await Breed.findById(id);
 
-    if (!species) {
-      return res.status(404).json({ error: "species not found" });
+    if (!breed) {
+      return res.status(404).json({ error: "breed not found" });
     }
 
-    return res.status(200).json(species);
+    return res.status(200).json(breed);
   } catch (err) {
     if (err.message.includes("invalid id")) {
       return res.status(400).json({ error: err.message });
@@ -34,12 +34,12 @@ export async function getSpeciesById(req, res) {
 }
 
 /**
- * POST /species
+ * POST /breed
  */
-export async function createSpecies(req, res) {
+export async function createBreed(req, res) {
   try {
     const { name } = req.body;
-    const created = await Species.create(name);
+    const created = await Breed.create(name);
 
     return res.status(201).json(created);
   } catch (err) {
@@ -53,16 +53,16 @@ export async function createSpecies(req, res) {
   }
 }
 
-/** *UPDATE /species/:id
+/** *UPDATE /breed/:id
  * 
  */
-export async function updateSpecies(req, res) {
+export async function updateBreed(req, res) {
   console.log("Incoming body:", req.body);
   try {
     const { id } = req.params;
     const { name } = req.body;
 
-    const updated = await Species.update(id, { name });
+    const updated = await Breed.update(id, { name });
     return res.status(200).json(updated);
   } catch (err) {
     if (err.message.includes("not found")) {
@@ -76,16 +76,16 @@ export async function updateSpecies(req, res) {
 }
 
 /**
- * DELETE /species/:id
+ * DELETE /breed/:id
  */
-export async function deleteSpecies(req, res) {
+export async function deleteBreed(req, res) {
   try {
     const { id } = req.params;
-    await Species.remove(id);
+    await Breed.remove(id);
 
     return res.status(204).send();
   } catch (err) {
-    if (err.message === "species not found") {
+    if (err.message === "breed not found") {
       return res.status(404).json({ error: err.message });
     }
 

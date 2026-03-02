@@ -23,7 +23,7 @@ describe("Service Configuration Routes", () => {
   describe("GET /service-configurations", () => {
     it("returns configuration", async () => {
       const mockConfig = {
-        species_id: 1,
+        breed_id: 1,
         service_id: 2,
         weight_class_id: 3,
         price: 50,
@@ -34,7 +34,7 @@ describe("Service Configuration Routes", () => {
       Config.findOne.mockResolvedValue(mockConfig);
 
       const res = await request(app).get(
-        "/service-configurations?species_id=1&service_id=2&weight_class_id=3"
+        "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
       );
 
       expect(res.status).toBe(200);
@@ -46,17 +46,17 @@ describe("Service Configuration Routes", () => {
       Config.findOne.mockResolvedValue(null);
 
       const res = await request(app).get(
-        "/service-configurations?species_id=1&service_id=2&weight_class_id=3"
+        "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
       );
 
       expect(res.status).toBe(404);
     });
 
     it("returns 400 for invalid input", async () => {
-      Config.findOne.mockRejectedValue(new Error("invalid species_id"));
+      Config.findOne.mockRejectedValue(new Error("invalid breed_id"));
 
       const res = await request(app).get(
-        "/service-configurations?species_id=bad&service_id=2&weight_class_id=3"
+        "/service-configurations?breed_id=bad&service_id=2&weight_class_id=3"
       );
 
       expect(res.status).toBe(400);
@@ -69,8 +69,8 @@ describe("Service Configuration Routes", () => {
   describe("GET /service-configurations/service/:serviceId", () => {
     it("returns all configs for a service", async () => {
       const mockRows = [
-        { species_id: 1, service_id: 2, weight_class_id: 1 },
-        { species_id: 1, service_id: 2, weight_class_id: 2 },
+        { breed_id: 1, service_id: 2, weight_class_id: 1 },
+        { breed_id: 1, service_id: 2, weight_class_id: 2 },
       ];
 
       Config.findByService.mockResolvedValue(mockRows);
@@ -101,7 +101,7 @@ describe("Service Configuration Routes", () => {
   describe("POST /service-configurations", () => {
     it("creates configuration", async () => {
       const created = {
-        species_id: 1,
+        breed_id: 1,
         service_id: 2,
         weight_class_id: 3,
         price: 40,
@@ -126,7 +126,7 @@ describe("Service Configuration Routes", () => {
       const res = await request(app)
         .post("/service-configurations")
         .send({
-          species_id: 1,
+          breed_id: 1,
           service_id: 2,
           weight_class_id: 3,
           price: -1,
@@ -144,7 +144,7 @@ describe("Service Configuration Routes", () => {
       const res = await request(app)
         .post("/service-configurations")
         .send({
-          species_id: 1,
+          breed_id: 1,
           service_id: 2,
           weight_class_id: 3,
           price: 40,
@@ -161,7 +161,7 @@ describe("Service Configuration Routes", () => {
   describe("PATCH /service-configurations", () => {
     it("updates configuration", async () => {
       const updated = {
-        species_id: 1,
+        breed_id: 1,
         service_id: 2,
         weight_class_id: 3,
         price: 45,
@@ -173,7 +173,7 @@ describe("Service Configuration Routes", () => {
 
       const res = await request(app)
         .patch(
-          "/service-configurations?species_id=1&service_id=2&weight_class_id=3"
+          "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
         )
         .send({ price: 45 });
 
@@ -191,7 +191,7 @@ describe("Service Configuration Routes", () => {
 
       const res = await request(app)
         .patch(
-          "/service-configurations?species_id=1&service_id=2&weight_class_id=3"
+          "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
         )
         .send({ price: 45 });
 
@@ -205,7 +205,7 @@ describe("Service Configuration Routes", () => {
 
       const res = await request(app)
         .patch(
-          "/service-configurations?species_id=1&service_id=2&weight_class_id=3"
+          "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
         )
         .send({});
 
@@ -221,7 +221,7 @@ describe("Service Configuration Routes", () => {
       Config.remove.mockResolvedValue(true);
 
       const res = await request(app).delete(
-        "/service-configurations?species_id=1&service_id=2&weight_class_id=3"
+        "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
       );
 
       expect(res.status).toBe(204);
@@ -234,7 +234,7 @@ describe("Service Configuration Routes", () => {
       );
 
       const res = await request(app).delete(
-        "/service-configurations?species_id=1&service_id=2&weight_class_id=3"
+        "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
       );
 
       expect(res.status).toBe(404);
@@ -244,7 +244,7 @@ describe("Service Configuration Routes", () => {
       Config.remove.mockRejectedValue(new Error("invalid service_id"));
 
       const res = await request(app).delete(
-        "/service-configurations?species_id=1&service_id=bad&weight_class_id=3"
+        "/service-configurations?breed_id=1&service_id=bad&weight_class_id=3"
       );
 
       expect(res.status).toBe(400);

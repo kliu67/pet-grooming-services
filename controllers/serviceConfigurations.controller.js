@@ -3,15 +3,15 @@ import * as Config from "../models/serviceConfigurations.model.js";
 /**
  * GET /service-configurations
  * Query params:
- *   ?species_id=&service_id=&weight_class_id=
+ *   ?breed_id=&service_id=&weight_class_id=
  * → get single config by composite key
  */
 export async function getConfiguration(req, res) {
   try {
-    const { species_id, service_id, weight_class_id } = req.query;
+    const { breed_id, service_id, weight_class_id } = req.query;
 
     const config = await Config.findOne(
-      species_id,
+      breed_id,
       service_id,
       weight_class_id
     );
@@ -67,15 +67,15 @@ export async function createConfiguration(req, res) {
 /**
  * PATCH /service-configurations
  * Query params required:
- *   ?species_id=&service_id=&weight_class_id=
+ *   ?breed_id=&service_id=&weight_class_id=
  */
 export async function updateConfiguration(req, res) {
   try {
-    const { species_id, service_id, weight_class_id } = req.query;
+    const { breed_id, service_id, weight_class_id } = req.query;
     const updates = req.body;
 
     const updated = await Config.update(
-      species_id,
+      breed_id,
       service_id,
       weight_class_id,
       updates
@@ -98,13 +98,13 @@ export async function updateConfiguration(req, res) {
 /**
  * DELETE /service-configurations
  * Query params required:
- *   ?species_id=&service_id=&weight_class_id=
+ *   ?breed_id=&service_id=&weight_class_id=
  */
 export async function deleteConfiguration(req, res) {
   try {
-    const { species_id, service_id, weight_class_id } = req.query;
+    const { breed_id, service_id, weight_class_id } = req.query;
 
-    await Config.remove(species_id, service_id, weight_class_id);
+    await Config.remove(breed_id, service_id, weight_class_id);
     return res.status(204).send();
   } catch (err) {
     if (err.message === "configuration not found") {

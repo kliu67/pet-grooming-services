@@ -5,7 +5,7 @@ import { pool, initDb } from "./db.js";
 import userRoutes from "./routes/users.routes.js";
 import serviceRoutes from "./routes/services.routes.js"
 import petRoutes from "./routes/pets.routes.js";
-import speciesRoutes from "./routes/species.routes.js";
+import breedsRoutes from "./routes/breeds.routes.js";
 import weightClassRoutes from "./routes/weightClasses.routes.js"
 import serviceConfigurationRoutes from "./routes/serviceConfigurations.routes.js"
 import appointmentRoutes from "./routes/appointments.routes.js"
@@ -45,8 +45,8 @@ app.get("/api/health", (req, res) => {
 app.use("/api/users", userRoutes);
 app.use("/services", serviceRoutes);
 app.use("/api/pets", petRoutes);
-app.use("/species", speciesRoutes);
-app.use("/weightClasses", weightClassRoutes);
+app.use("/api/breeds", breedsRoutes);
+app.use("/api/weightClasses", weightClassRoutes);
 app.use("/serviceConfigurations", serviceConfigurationRoutes);
 app.use("/appointments", appointmentRoutes);
 
