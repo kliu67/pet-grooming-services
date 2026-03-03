@@ -23,14 +23,35 @@
 
         {
             "name": "Basic grooming",
-            "base_price": "45",
+            "base_price": "30",
             "description": "Includes: nail clipping, ear cleaning, paw trimming, private part trimming, shampoo/conditioning and drying."
         },
 
         {
             "name": "Full grooming",
-            "base_price": "55",
+            "base_price": "60",
             "description": "Includes everything provided in basic grooming PLUS hair trimming and styling."
+        },
+        {
+            "name": "Bath",
+            "base_price": "30",
+            "description": "description"
+        },
+        {
+            "name": "Dematting",
+            "base_price": "10",
+            "description": "Remove mats and knots. Keeps your dog’s coat smooth, healthy, and easy to maintain."
+        },
+        {
+            "name": "Nail Trimming",
+            "base_price": "10",
+            "description": "Quick nail trimming and filing, preventing overgrowth, splitting, and discomfort."
+        },
+        {
+            "name": "Ear Cleaning",
+            "base_price": "10",
+            "description": "Remove wax and debris, help prevent infections and odor, and keep your dog’s ears healthy and comfortable."
+
         }
     ]
 

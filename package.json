@@ -15,7 +15,9 @@
     "seed:breeds": "node db/seeds/seedBreeds.js",
     "seed:services": "node db/seeds/seedServices.js",
     "seed:clients": "node db/seeds/seedClients.js",
-    "seed:pets": "node db/seeds/seedPets.js"
+    "seed:pets": "node db/seeds/seedPets.js",
+    "seed:stylists": "node db/seeds/seedStylists.js",
+    "seed:availability": "node db/seeds/seedAvailability.js"
   },
   "keywords": [],
   "author": "",
