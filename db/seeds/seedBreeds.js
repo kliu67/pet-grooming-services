@@ -24,7 +24,7 @@ async function seedBreeds() {
     for (const s of dogsList) {
       await pool.query(
         `
-        INSERT INTO breed (name)
+        INSERT INTO breeds (name)
         VALUES ($1)
         ON CONFLICT (name) DO NOTHING
         `,
