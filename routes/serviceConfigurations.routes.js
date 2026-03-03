@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getConfiguration,
+  getAllConfigurations,
   getConfigurationsByService,
   createConfiguration,
   updateConfiguration,
@@ -10,7 +11,7 @@ import {
 const serviceConfigrationRoutes = express.Router();
 
 /* Get single configuration by composite key */
-serviceConfigrationRoutes.get("/", getConfiguration);
+serviceConfigrationRoutes.get("/", getAllConfigurations);
 
 /* List all configurations for a service */
 serviceConfigrationRoutes.get("/service/:serviceId", getConfigurationsByService);

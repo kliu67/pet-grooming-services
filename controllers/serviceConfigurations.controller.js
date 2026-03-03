@@ -1,6 +1,18 @@
 import * as Config from "../models/serviceConfigurations.model.js";
 
 /**
+ * GEt /service-configurations
+ */
+
+export async function getAllConfigurations(req, res) {
+  try {
+    const serviceConfigurations = await Config.findAll();
+    return res.status(200).json(serviceConfigurations ?? []);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+/**
  * GET /service-configurations
  * Query params:
  *   ?breed_id=&service_id=&weight_class_id=
@@ -10,11 +22,7 @@ export async function getConfiguration(req, res) {
   try {
     const { breed_id, service_id, weight_class_id } = req.query;
 
-    const config = await Config.findOne(
-      breed_id,
-      service_id,
-      weight_class_id
-    );
+    const config = await Config.findOne(breed_id, service_id, weight_class_id);
 
     if (!config) {
       return res.status(404).json({ error: "configuration not found" });
@@ -54,10 +62,7 @@ export async function createConfiguration(req, res) {
     const created = await Config.create(req.body);
     return res.status(201).json(created);
   } catch (err) {
-    if (
-      err.message.includes("invalid") ||
-      err.message.includes("exists")
-    ) {
+    if (err.message.includes("invalid") || err.message.includes("exists")) {
       return res.status(400).json({ error: err.message });
     }
     return res.status(500).json({ error: err.message });

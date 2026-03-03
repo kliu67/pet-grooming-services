@@ -27,7 +27,16 @@ function validateDuration(minutes) {
 }
 
 /* ---------------- CRUD ---------------- */
+/**
+ * Get all configurations
+ */
 
+export async function findAll(){
+    const { rows } = await pool.query(
+        `SELECT id, breed_id, service_id, weight_class_id, price, duration_minutes, is_active, created_at, updated_at FROM service_configurations`
+    )
+    return rows ?? null;
+}
 /**
  * Get configuration by composite key
  */
