@@ -10,6 +10,8 @@ import weightClassRoutes from "./routes/weightClasses.routes.js"
 import serviceConfigurationRoutes from "./routes/serviceConfigurations.routes.js"
 import appointmentRoutes from "./routes/appointments.routes.js"
 import stylistRoutes from "./routes/stylists.routes.js"
+import stylistAvailabilityRoutes from "./routes/stylistAvailability.routes.js"
+import stylistTimeOffRoutes from "./routes/stylistTimeOff.routes.js"
 
 import { errorHandler } from "./middleware/error.middleware.js";
 
@@ -51,5 +53,7 @@ app.use("/api/weightClasses", weightClassRoutes);
 app.use("/serviceConfigurations", serviceConfigurationRoutes);
 app.use("/appointments", appointmentRoutes);
 app.use("/api/stylists", stylistRoutes);
+app.use("/api/stylist-availability", stylistAvailabilityRoutes);
+app.use("/api/stylist-time-off", stylistTimeOffRoutes);
 
 
