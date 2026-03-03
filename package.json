@@ -18,7 +18,9 @@
     "seed:pets": "node db/seeds/seedPets.js",
     "seed:stylists": "node db/seeds/seedStylists.js",
     "seed:availability": "node db/seeds/seedAvailability.js",
-    "seed:timeoff": "node db/seeds/seedTimeOff.js"
+    "seed:timeoff": "node db/seeds/seedTimeOff.js", 
+    "seed:noServiceBreeds": "node db/seeds/seedNoServiceBreeds.js",
+    "seed:serviceConfigurations": "node db/seeds/seedServiceConfigurations.js"
   },
   "keywords": [],
   "author": "",
