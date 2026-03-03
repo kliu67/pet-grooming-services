@@ -9,6 +9,7 @@ import breedsRoutes from "./routes/breeds.routes.js";
 import weightClassRoutes from "./routes/weightClasses.routes.js"
 import serviceConfigurationRoutes from "./routes/serviceConfigurations.routes.js"
 import appointmentRoutes from "./routes/appointments.routes.js"
+import stylistRoutes from "./routes/stylists.routes.js"
 
 import { errorHandler } from "./middleware/error.middleware.js";
 
@@ -49,5 +50,6 @@ app.use("/api/breeds", breedsRoutes);
 app.use("/api/weightClasses", weightClassRoutes);
 app.use("/serviceConfigurations", serviceConfigurationRoutes);
 app.use("/appointments", appointmentRoutes);
+app.use("/api/stylists", stylistRoutes);
 
 
