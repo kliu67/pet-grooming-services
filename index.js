@@ -51,7 +51,7 @@ app.use("/api/pets", petRoutes);
 app.use("/api/breeds", breedsRoutes);
 app.use("/api/weightClasses", weightClassRoutes);
 app.use("/api/serviceConfigurations", serviceConfigurationRoutes);
-app.use("/appointments", appointmentRoutes);
+app.use("/api/appointments", appointmentRoutes);
 app.use("/api/stylists", stylistRoutes);
 app.use("/api/stylist-availability", stylistAvailabilityRoutes);
 app.use("/api/stylist-time-off", stylistTimeOffRoutes);
