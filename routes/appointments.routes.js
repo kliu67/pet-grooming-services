@@ -4,20 +4,15 @@ import {
   getAppointmentById,
   cancelAppointment,
   rescheduleAppointment,
+  getAllAppointments
 } from "../controllers/appointments.controller.js";
 
 const appointmentRoutes = express.Router();
 
-/* Book appointment */
+appointmentRoutes.get("/", getAllAppointments)
 appointmentRoutes.post("/", bookAppointment);
-
-/* Get by id */
 appointmentRoutes.get("/:id", getAppointmentById);
-
-/* Cancel */
 appointmentRoutes.patch("/:id/cancel", cancelAppointment);
-
-/* Reschedule */
 appointmentRoutes.patch("/:id/reschedule", rescheduleAppointment);
 
 export default appointmentRoutes;

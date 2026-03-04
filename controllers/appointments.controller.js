@@ -1,9 +1,18 @@
 import * as Appointment from "../models/appointments.model.js";
 
 /**
- * POST /appointments
- * Book appointment
+ * GEt /service-configurations
  */
+
+export async function getAllAppointments(req, res) {
+  try {
+    const appointments = await Appointment.findAll();
+    return res.status(200).json(appointments ?? []);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 export async function bookAppointment(req, res) {
   try {
     const created = await Appointment.book(req.body);
@@ -12,7 +21,9 @@ export async function bookAppointment(req, res) {
     if (
       err.message.includes("invalid") ||
       err.message.includes("not found") ||
-      err.message.includes("configuration")
+      err.message.includes("configuration") ||
+      err.message.includes("does not belong") ||
+      err.message.includes("not available")
     ) {
       return res.status(400).json({ error: err.message });
     }
@@ -25,9 +36,6 @@ export async function bookAppointment(req, res) {
   }
 }
 
-/**
- * GET /appointments/:id
- */
 export async function getAppointmentById(req, res) {
   try {
     const { id } = req.params;
@@ -46,9 +54,6 @@ export async function getAppointmentById(req, res) {
   }
 }
 
-/**
- * PATCH /appointments/:id/cancel
- */
 export async function cancelAppointment(req, res) {
   try {
     const { id } = req.params;
@@ -67,9 +72,6 @@ export async function cancelAppointment(req, res) {
   }
 }
 
-/**
- * PATCH /appointments/:id/reschedule
- */
 export async function rescheduleAppointment(req, res) {
   try {
     const { id } = req.params;
@@ -86,7 +88,10 @@ export async function rescheduleAppointment(req, res) {
       return res.status(400).json({ error: err.message });
     }
 
-    if (err.message.includes("overlaps")) {
+    if (
+      err.message.includes("overlaps") ||
+      err.message.includes("not available")
+    ) {
       return res.status(409).json({ error: err.message });
     }
 
