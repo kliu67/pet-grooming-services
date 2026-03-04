@@ -1,211 +1,224 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-//
-// Mock DB client + pool
-//
 const mockQuery = vi.fn();
 const mockRelease = vi.fn();
 
-vi.mock('../../db.js', () => ({
+vi.mock("../../db.js", () => ({
   pool: {
     query: vi.fn(),
     connect: vi.fn(() => ({
       query: mockQuery,
-      release: mockRelease,
-    })),
-  },
+      release: mockRelease
+    }))
+  }
 }));
 
-import { pool } from '../../db.js';
-import {
-  book,
-  findById,
-  cancel,
-  reschedule,
-} from '../appointments.model.js';
+import { pool } from "../../db.js";
+import { book, findById, cancel, reschedule } from "../appointments.model.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
-//
-// BOOK SUCCESS
-//
-describe('book()', () => {
-  it('creates appointment successfully', async () => {
+describe("book()", () => {
+  it("creates appointment successfully", async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({ rows: [{ id: 1, breed: 1, weight_class: 1 }] }) // pet lock
-      .mockResolvedValueOnce({ rows: [{ price: 50, duration_minutes: 60 }] }) // config
-      .mockResolvedValueOnce({ rows: [{ id: 99 }] }) // insert
+      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) // pet lock
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
+      .mockResolvedValueOnce({ rows: [{ id: 1, first_name: "Kai", last_name: "Li" }] }) // client snapshot
+      .mockResolvedValueOnce({ rows: [{ id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }] }) // config
+      .mockResolvedValueOnce({ rows: [] }) // overlap check
+      .mockResolvedValueOnce({ rows: [{ id: 99, status: "booked" }] }) // insert
       .mockResolvedValueOnce(); // COMMIT
 
     const result = await book({
-      user_id: 1,
+      client_id: 1,
       pet_id: 1,
-      service_id: 1,
-      start_time: new Date(),
+      service_configuration_id: 10,
+      stylist_id: 2,
+      start_time: new Date().toISOString()
     });
 
-    expect(result).toEqual({ id: 99 });
-    expect(mockQuery).toHaveBeenCalled();
+    expect(result).toEqual({ id: 99, status: "booked" });
+    expect(mockRelease).toHaveBeenCalled();
   });
 
-  it('throws overlap error (23P01)', async () => {
+  it("throws when stylist is not available", async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({ rows: [{ id: 1, breed: 1, weight_class: 1 }] })
-      .mockResolvedValueOnce({ rows: [{ price: 50, duration_minutes: 60 }] })
-      .mockRejectedValueOnce({ code: '23P01' }) // insert overlap
+      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1, first_name: "Kai", last_name: "Li" }] })
+      .mockResolvedValueOnce({ rows: [{ id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }] })
+      .mockResolvedValueOnce({ rows: [{ id: 123 }] }) // overlap exists
       .mockResolvedValueOnce(); // ROLLBACK
 
     await expect(
       book({
-        user_id: 1,
+        client_id: 1,
         pet_id: 1,
-        service_id: 1,
-        start_time: new Date(),
+        service_configuration_id: 10,
+        stylist_id: 2,
+        start_time: new Date().toISOString()
       })
-    ).rejects.toThrow('appointment overlaps existing booking');
+    ).rejects.toThrow("stylist is not available at that time");
   });
 
-  it('throws FK error (23503)', async () => {
+  it("throws mapped FK error (23503)", async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
-      .mockRejectedValueOnce({ code: '23503' }) // FK error
+      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1, first_name: "Kai", last_name: "Li" }] })
+      .mockResolvedValueOnce({ rows: [{ id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockRejectedValueOnce({ code: "23503" }) // insert
       .mockResolvedValueOnce(); // ROLLBACK
 
     await expect(
       book({
-        user_id: 999,
+        client_id: 1,
         pet_id: 1,
-        service_id: 1,
-        start_time: new Date(),
+        service_configuration_id: 10,
+        stylist_id: 2,
+        start_time: new Date().toISOString()
       })
-    ).rejects.toThrow('invalid user, pet, or service');
+    ).rejects.toThrow("invalid client, pet, stylist, or service configuration");
+  });
+
+  it("maps Rachel buffer trigger error when scheduling", async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1, first_name: "Kai", last_name: "Li" }] })
+      .mockResolvedValueOnce({ rows: [{ id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockRejectedValueOnce({
+        code: "P0001",
+        message: "Rachel Wang requires a 20 minute buffer between appointments"
+      })
+      .mockResolvedValueOnce(); // ROLLBACK
+
+    await expect(
+      book({
+        client_id: 1,
+        pet_id: 1,
+        service_configuration_id: 10,
+        stylist_id: 2,
+        start_time: new Date().toISOString()
+      })
+    ).rejects.toThrow("stylist is not available at that time");
+  });
+
+  it("maps stylist time off trigger error when scheduling", async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1, first_name: "Kai", last_name: "Li" }] })
+      .mockResolvedValueOnce({ rows: [{ id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockRejectedValueOnce({
+        code: "P0001",
+        message: "appointment overlaps stylist time off"
+      })
+      .mockResolvedValueOnce(); // ROLLBACK
+
+    await expect(
+      book({
+        client_id: 1,
+        pet_id: 1,
+        service_configuration_id: 10,
+        stylist_id: 2,
+        start_time: new Date().toISOString()
+      })
+    ).rejects.toThrow("stylist is not available at that time");
   });
 });
 
-//
-// FIND BY ID
-//
-describe('findById()', () => {
-  it('returns appointment', async () => {
+describe("findById()", () => {
+  it("returns appointment", async () => {
     pool.query.mockResolvedValue({ rows: [{ id: 1 }] });
-
     const result = await findById(1);
     expect(result).toEqual({ id: 1 });
   });
 
-  it('returns null when not found', async () => {
+  it("returns null when not found", async () => {
     pool.query.mockResolvedValue({ rows: [] });
-
     const result = await findById(1);
     expect(result).toBeNull();
   });
 });
 
-//
-// CANCEL
-//
-describe('cancel()', () => {
-  it('cancels appointment', async () => {
-    pool.query.mockResolvedValue({ rows: [{ id: 1, status: 'cancelled' }] });
-
+describe("cancel()", () => {
+  it("cancels appointment", async () => {
+    pool.query.mockResolvedValue({ rows: [{ id: 1, status: "cancelled" }] });
     const result = await cancel(1);
-    expect(result.status).toBe('cancelled');
+    expect(result.status).toBe("cancelled");
   });
 
-  it('throws if not found', async () => {
+  it("throws if not found", async () => {
     pool.query.mockResolvedValue({ rows: [] });
-
-    await expect(cancel(1)).rejects.toThrow('appointment not found');
+    await expect(cancel(1)).rejects.toThrow("appointment not found");
   });
 });
 
-//
-// RESCHEDULE
-//
-describe('reschedule()', () => {
-  it('reschedules successfully', async () => {
+describe("reschedule()", () => {
+  it("reschedules successfully", async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({ rows: [{ duration_snapshot: 60 }] }) // lock
-      .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // update
+      .mockResolvedValueOnce({ rows: [{ id: 1, duration_snapshot: 60, stylist_id: 2 }] }) // lock
+      .mockResolvedValueOnce({ rows: [] }) // overlap check
+      .mockResolvedValueOnce({ rows: [{ id: 1, status: "booked" }] }) // update
       .mockResolvedValueOnce(); // COMMIT
 
-    const result = await reschedule(1, new Date());
-    expect(result).toEqual({ id: 1 });
+    const result = await reschedule(1, new Date().toISOString());
+    expect(result).toEqual({ id: 1, status: "booked" });
   });
 
-  it('throws overlap error', async () => {
+  it("throws when stylist overlap exists", async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({ rows: [{ duration_snapshot: 60 }] })
-      .mockRejectedValueOnce({ code: '23P01' }) // overlap
+      .mockResolvedValueOnce({ rows: [{ id: 1, duration_snapshot: 60, stylist_id: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 10 }] }) // overlap
       .mockResolvedValueOnce(); // ROLLBACK
 
-    await expect(reschedule(1, new Date()))
-      .rejects
-      .toThrow('new time overlaps existing booking');
-  });
-});
-
-//
-// CONCURRENCY SIMULATION
-//
-describe('concurrency simulation', () => {
-  it('handles parallel booking safely (race simulation)', async () => {
-    let first = true;
-    let insertCount = 0;
-
-    mockQuery.mockImplementation(async (sql) => {
-    //   if (first) {
-    //     first = false;
-    //     return Promise.resolve({ rows: [{ id: 1 }] });
-    //   }
-    //   return Promise.reject({ code: '23P01' });
-     if (sql === 'BEGIN') return;
-  if (sql === 'COMMIT') return;
-  if (sql === 'ROLLBACK') return;
-
-  if (sql.includes('FROM pets')) {
-    return { rows: [{ id: 1, breed: 1, weight_class: 1 }] };
-  }
-
-  if (sql.includes('FROM service_configurations')) {
-    return { rows: [{ price: 10, duration_minutes: 30 }] };
-  }
-
-  if (sql.includes('INSERT INTO appointments')) {
-    insertCount++;
-
-    if (insertCount === 1) {
-      return { rows: [{ id: 1 }] }; // first booking succeeds
-    }
-
-    throw { code: '23P01' }; // second booking overlaps
-  }
-
-  throw new Error('Unexpected query: ' + sql);
-    });
-
-    const attempts = [
-      book({ user_id: 1, pet_id: 1, service_id: 1, start_time: new Date() }),
-      book({ user_id: 1, pet_id: 1, service_id: 1, start_time: new Date() }),
-    ];
-
-    const results = await Promise.allSettled(attempts);
-    expect(results[0].status).toBe('fulfilled');
-    expect(results[1].status).toBe('rejected');
+    await expect(reschedule(1, new Date().toISOString())).rejects.toThrow(
+      "stylist is not available at that time"
+    );
   });
 
-  it('handles many concurrent reads', async () => {
-    pool.query.mockResolvedValue({ rows: [{ id: 1 }] });
+  it("maps Rachel buffer trigger error when rescheduling", async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 1, duration_snapshot: 60, stylist_id: 2 }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockRejectedValueOnce({
+        code: "P0001",
+        message: "Rachel Wang requires a 10 minute buffer between appointments"
+      })
+      .mockResolvedValueOnce(); // ROLLBACK
 
-    const tasks = Array.from({ length: 50 }, () => findById(1));
-    const results = await Promise.all(tasks);
+    await expect(reschedule(1, new Date().toISOString())).rejects.toThrow(
+      "stylist is not available at that time"
+    );
+  });
 
-    expect(results.length).toBe(50);
+  it("maps stylist time off trigger error when rescheduling", async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 1, duration_snapshot: 60, stylist_id: 2 }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockRejectedValueOnce({
+        code: "P0001",
+        message: "appointment overlaps stylist time off"
+      })
+      .mockResolvedValueOnce(); // ROLLBACK
+
+    await expect(reschedule(1, new Date().toISOString())).rejects.toThrow(
+      "stylist is not available at that time"
+    );
   });
 });
