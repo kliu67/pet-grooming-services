@@ -53,7 +53,7 @@ app.use("/api/weightClasses", weightClassRoutes);
 app.use("/api/serviceConfigurations", serviceConfigurationRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/stylists", stylistRoutes);
-app.use("/api/stylist-availability", stylistAvailabilityRoutes);
-app.use("/api/stylist-time-off", stylistTimeOffRoutes);
+app.use("/api/availability", stylistAvailabilityRoutes);
+app.use("/api/timeOffs", stylistTimeOffRoutes);
 
 
