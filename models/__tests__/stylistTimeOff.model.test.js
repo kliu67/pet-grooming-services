@@ -53,7 +53,12 @@ describe("stylistTimeOff.model", () => {
     expect(result).toEqual(row);
     expect(pool.query).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO stylist_time_off"),
-      [1, payload.start_datetime, payload.end_datetime, "Vacation"]
+      [
+        1,
+        new Date(payload.start_datetime).toISOString(),
+        new Date(payload.end_datetime).toISOString(),
+        "Vacation",
+      ]
     );
   });
 

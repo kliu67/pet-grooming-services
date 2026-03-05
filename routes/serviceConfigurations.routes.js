@@ -11,7 +11,10 @@ import {
 const serviceConfigrationRoutes = express.Router();
 
 /* Get single configuration by composite key */
-serviceConfigrationRoutes.get("/", getAllConfigurations);
+serviceConfigrationRoutes.get("/", getConfiguration);
+
+/* List all configurations */
+serviceConfigrationRoutes.get("/all", getAllConfigurations);
 
 /* List all configurations for a service */
 serviceConfigrationRoutes.get("/service/:serviceId", getConfigurationsByService);
