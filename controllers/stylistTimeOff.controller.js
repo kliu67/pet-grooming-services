@@ -27,6 +27,24 @@ export async function getStylistTimeOffById(req, res) {
   }
 }
 
+export async function getStylistTimeOffByStylistId(req, res) {
+  try {
+    const { stylistId } = req.params;
+    const row = await StylistTimeOff.findByStylistId(stylistId);
+
+    if (!row) {
+      return res.status(404).json({ error: `time off for ${stylistId} not found` });
+    }
+
+    return res.status(200).json(row);
+  } catch (err) {
+    if (err.message.includes("validation") || err.message.includes("ID")) {
+      return res.status(400).json({ error: err.message });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 export async function createStylistTimeOff(req, res) {
   try {
     const { stylist_id, start_datetime, end_datetime, reason } = req.body;

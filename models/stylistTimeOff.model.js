@@ -11,7 +11,7 @@ function validateDatetime(value, label) {
     throw new Error(`data validation error: ${label} must be a valid datetime`);
   }
 
-  return value.trim();
+  return parsed.toISOString();
 }
 
 function validateRange(startDatetime, endDatetime) {
@@ -54,6 +54,22 @@ export async function findById(id) {
 
   return rows[0] ?? null;
 }
+
+export async function findByStylistId(id) {
+  const sanitizedId = validateNumericId(id);
+
+  const { rows } = await pool.query(
+    `
+    SELECT id, stylist_id, start_datetime, end_datetime, reason
+    FROM stylist_time_off
+    WHERE stylist_id = $1
+    `,
+    [sanitizedId]
+  );
+
+  return rows;
+}
+
 
 export async function create({ stylist_id, start_datetime, end_datetime, reason }) {
   const stylistId = validateNumericId(stylist_id);

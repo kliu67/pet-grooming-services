@@ -55,6 +55,21 @@ export async function findById(id) {
   return rows[0] ?? null;
 }
 
+export async function findByStylistId(id) {
+  const sanitizedId = validateNumericId(id);
+
+  const { rows } = await pool.query(
+    `
+    SELECT id, stylist_id, day_of_week, start_time, end_time
+    FROM stylist_availability
+    WHERE stylist_id = $1
+    `,
+    [sanitizedId]
+  );
+
+  return rows;
+}
+
 export async function create({ stylist_id, day_of_week, start_time, end_time }) {
   const stylistId = validateNumericId(stylist_id);
   const day = validateDayOfWeek(day_of_week);

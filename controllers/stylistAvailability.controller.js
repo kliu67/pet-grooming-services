@@ -27,6 +27,25 @@ export async function getStylistAvailabilityById(req, res) {
   }
 }
 
+
+export async function getStylistAvailabilityByStylistId(req, res) {
+  try {
+    const { stylistId } = req.params;
+    const row = await StylistAvailability.findByStylistId(stylistId);
+
+    if (!row) {
+      return res.status(404).json({ error: `stylist availability for id: ${stylistId} not found` });
+    }
+
+    return res.status(200).json(row);
+  } catch (err) {
+    if (err.message.includes("validation") || err.message.includes("ID")) {
+      return res.status(400).json({ error: err.message });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 export async function createStylistAvailability(req, res) {
   try {
     const { stylist_id, day_of_week, start_time, end_time } = req.body;
