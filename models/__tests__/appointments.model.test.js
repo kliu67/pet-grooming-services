@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-
+import { bookedAppointments } from "./fixtures/appointmentFixtures.js";
 const mockQuery = vi.fn();
 const mockRelease = vi.fn();
 
@@ -68,6 +68,12 @@ const timeOffRows = [
   }
 ]
 
+const bookedAppointments = [
+  {
+
+  }
+]
+
 beforeEach(() => {
   vi.resetAllMocks();
   mockQuery.mockReset();
@@ -90,10 +96,10 @@ describe("book()", () => {
       }) // config
       .mockResolvedValueOnce({
         rows: availabilityRows,
-      })
-      // .mockResolvedValueOnce({
-      //   rows: timeOffRows,
-      // })
+      }) //availability
+      .mockResolvedValueOnce({
+        rows: timeOffRows,
+      }) //time offs
       .mockResolvedValueOnce({ rows: [] }) // overlap check
       .mockResolvedValueOnce({ rows: [{ id: 99, status: "booked" }] }) // insert
       .mockResolvedValueOnce(); // COMMIT
@@ -110,27 +116,6 @@ describe("book()", () => {
     expect(mockRelease).toHaveBeenCalled();
   });
 
-  // it("throws when stylist is not available", async () => {
-  //   mockQuery
-  //     .mockResolvedValueOnce() // BEGIN
-  //     .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
-  //     .mockResolvedValueOnce({ rows: [{ id: 2 }] })
-  //     .mockResolvedValueOnce({ rows: [{ id: 1, first_name: "Kai", last_name: "Li" }] })
-  //     .mockResolvedValueOnce({ rows: [{ id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }] })
-  //     .mockResolvedValueOnce({ rows: [{ id: 123 }] }) // overlap exists
-  //     .mockResolvedValueOnce(); // ROLLBACK
-
-  //   await expect(
-  //     book({
-  //       client_id: 1,
-  //       pet_id: 1,
-  //       service_configuration_id: 10,
-  //       stylist_id: 2,
-  //       start_time: FUTURE_START
-  //     })
-  //   ).rejects.toThrow("stylist is not available at that time");
-  // });
-
   it("throws mapped FK error (23503)", async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
@@ -144,6 +129,12 @@ describe("book()", () => {
           { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
         ]
       })
+      .mockResolvedValueOnce({
+        rows: availabilityRows,
+      }) //availability
+      .mockResolvedValueOnce({
+        rows: timeOffRows,
+      }) //time offs
       .mockResolvedValueOnce({ rows: [] })
       .mockRejectedValueOnce({ code: "23503" }) // insert
       .mockResolvedValueOnce(); // ROLLBACK
@@ -159,25 +150,10 @@ describe("book()", () => {
     ).rejects.toThrow("invalid client, pet, stylist, or service configuration");
   });
 
-  it("maps Rachel buffer trigger error when scheduling", async () => {
+  it('throws when pet is not found', async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
-      .mockResolvedValueOnce({ rows: [{ id: 2 }] })
-      .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
-      })
-      .mockResolvedValueOnce({
-        rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
-        ]
-      })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockRejectedValueOnce({
-        code: "P0001",
-        message: "Rachel Wang requires a 20 minute buffer between appointments"
-      })
-      .mockResolvedValueOnce(); // ROLLBACK
+      .mockResolvedValueOnce({ rows: [] }) //pets
 
     await expect(
       book({
@@ -187,28 +163,31 @@ describe("book()", () => {
         stylist_id: 2,
         start_time: FUTURE_START
       })
-    ).rejects.toThrow("stylist is not available at that time");
-  });
+    ).rejects.toThrow("pet not found");
+  })
 
-  it("maps stylist time off trigger error when scheduling", async () => {
+  it('throws when owner is not found', async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
-      .mockResolvedValueOnce({ rows: [{ id: 2 }] })
-      .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
+
+    await expect(
+      book({
+        client_id: 2,
+        pet_id: 1,
+        service_configuration_id: 10,
+        stylist_id: 2,
+        start_time: FUTURE_START
       })
-      .mockResolvedValueOnce({
-        rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
-        ]
-      })
+    ).rejects.toThrow("pet does not belong to client");
+  });
+
+  it('throws when stylist is not found', async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
       .mockResolvedValueOnce({ rows: [] })
-      .mockRejectedValueOnce({
-        code: "P0001",
-        message: "appointment overlaps stylist time off"
-      })
-      .mockResolvedValueOnce(); // ROLLBACK
+
 
     await expect(
       book({
@@ -218,8 +197,53 @@ describe("book()", () => {
         stylist_id: 2,
         start_time: FUTURE_START
       })
-    ).rejects.toThrow("stylist is not available at that time");
+    ).rejects.toThrow("Stylist not found.");
   });
+
+  it('throws when client is not found', async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
+      .mockResolvedValueOnce({ rows: [] })
+
+    await expect(
+      book({
+        client_id: 1,
+        pet_id: 1,
+        service_configuration_id: 10,
+        stylist_id: 2,
+        start_time: FUTURE_START
+      })
+    ).rejects.toThrow("client not found");
+  });
+
+  it('throws when service configuration is not found', async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
+      .mockResolvedValueOnce({
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
+      }) // client snapshot
+      .mockResolvedValueOnce({
+        rows: []
+      }) // config
+
+    await expect(
+      book({
+        client_id: 1,
+        pet_id: 1,
+        service_configuration_id: 10,
+        stylist_id: 2,
+        start_time: FUTURE_START
+      })
+    ).rejects.toThrow("service configuration not found");
+  });
+
+
+
+
 
   it("throws when start_time is in the past", async () => {
     await expect(
@@ -250,7 +274,7 @@ describe("book()", () => {
         ]
       }) //service config
       .mockResolvedValueOnce({
-        rows: [{ day_of_week: 4, start_time: "09:00:00", end_time: "17:00:00" }]
+        rows: availabilityRows,
       }) //availability
       // .mockResolvedValueOnce({ rows: [{ id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }] }) //timeoff
       .mockResolvedValueOnce({ rows: [] })
@@ -266,7 +290,7 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START
+        start_time: new Date("2028-03-06 05:00:00.000 -0500")
       })
     ).rejects.toThrow(
       "appointment start time is earlier than stylist 2's available window"
@@ -314,7 +338,7 @@ describe("book()", () => {
   it(`throws when appointment time overlaps with stylist's time off`, async () => {
     let start = new Date('2026-03-15 09:00:00.000 -0500')
 
-        mockQuery
+    mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) //pet
       .mockResolvedValueOnce({ rows: [{ id: 2 }] }) //stylist
@@ -346,7 +370,43 @@ describe("book()", () => {
     ).rejects.toThrow(
       "appointment time overlaps with stylist 2's time off window"
     );
-  })
+  });
+
+  it('throws when appointment is over two days', async () => {
+    const start = '2028-03-01 23:00:00.000 -500';
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) // pet lock
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
+      .mockResolvedValueOnce({
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
+      }) // client snapshot
+      .mockResolvedValueOnce({
+        rows: [
+          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
+        ]
+      }) // config
+      .mockResolvedValueOnce({
+        rows: availabilityRows,
+      })
+      .mockResolvedValueOnce({
+        rows: timeOffRows,
+      })
+      .mockResolvedValueOnce({ rows: [] }) // overlap check
+      .mockResolvedValueOnce({ rows: [] }) // insert
+      .mockResolvedValueOnce(); // COMMIT
+
+    await expect(book({
+      client_id: 1,
+      pet_id: 1,
+      service_configuration_id: 10,
+      stylist_id: 2,
+      start_time: start
+    })).rejects.toThrow(
+      "start time and end time must be on the same day"
+    );;
+    expect(mockRelease).toHaveBeenCalled();
+  });
 });
 
 describe("findById()", () => {
