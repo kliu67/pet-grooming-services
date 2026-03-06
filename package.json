@@ -18,7 +18,7 @@
     "seed:pets": "node db/seeds/seedPets.js",
     "seed:stylists": "node db/seeds/seedStylists.js",
     "seed:availability": "node db/seeds/seedAvailability.js",
-    "seed:timeoff": "node db/seeds/seedTimeOff.js", 
+    "seed:timeoff": "node db/seeds/seedTimeOff.js",
     "seed:noServiceBreeds": "node db/seeds/seedNoServiceBreeds.js",
     "seed:serviceConfigurations": "node db/seeds/seedServiceConfigurations.js"
   },
@@ -28,6 +28,7 @@
   "type": "module",
   "dependencies": {
     "cors": "^2.8.6",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "pg": "^8.18.0",

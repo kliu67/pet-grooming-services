@@ -1,5 +1,11 @@
 import { pool } from "../db.js";
-
+import {
+  getOpenTimeRanges,
+  parseTimeToMinutes,
+  parseDateToMinutes
+} from "../utils/timeRanges.js";
+import { areIntervalsOverlapping, add } from "date-fns";
+import { computeBuffer } from "../utils/helpers.js";
 function validateId(id, name = "id") {
   const n = Number(id);
   if (!Number.isInteger(n) || n <= 0) {
@@ -32,7 +38,72 @@ function validateTime(startTime) {
   return t;
 }
 
-async function assertStylistAvailable(
+function assertStartTimeNotPast(start) {
+  if (start.getTime() < Date.now()) {
+    throw new Error("invalid start_time: cannot be in the past");
+  }
+}
+
+function assertStylistIsAvailable(availabilityData, stylistId, start, config) {
+  // const dayOfWeek = start.getDay();
+  const availableTime = availabilityData.rows.find(
+    (a) => a.day_of_week === start.getDay()
+  );
+  if (availableTime) {
+    //check stylist is available on this day of week
+    const availabilityStartMinutes = parseTimeToMinutes(
+      availableTime.start_time
+    );
+    const startMinutes = parseDateToMinutes(start);
+
+    if (startMinutes < availabilityStartMinutes) {
+      //check appointment time is equal to or later than the availabile start time
+      throw `appointment start time is earlier than stylist ${stylistId}'s available window`;
+    }
+
+    const availabilityEndMinutes = parseTimeToMinutes(availableTime.end_time);
+    const endMinutes = startMinutes + Number(config?.duration_minutes);
+    if (endMinutes > availabilityEndMinutes) {
+      throw `appointment end time is later than stylist ${stylistId}'s available window`;
+    }
+    return true;
+  }
+  return false;
+}
+
+function assertNoTimeOffOverlap(timeOffData, stylistId, start, config) {
+  const timeOffs = timeOffData.rows.filter((to) => to.stylist_id === stylistId);
+
+  if (!timeOffs) {
+    //no timeoffs found, skip check
+    return true;
+  }
+  const overlaps = timeOffs.filter((to) => {
+    const timeOffStart = new Date(to.start_datetime);
+    const timeOffEnd = new Date(to.end_datetime);
+    const appointmentStart = start;
+    const appointmentEnd = add(appointmentStart, {
+      minutes: config.duration_minutes
+    });
+    return areIntervalsOverlapping(
+      { start: timeOffStart, end: timeOffEnd },
+      { start: appointmentStart, end: appointmentEnd }
+    );
+  });
+
+  if (overlaps[0]) {
+    throw `appointment time overlaps with stylist ${stylistId}'s time off window`;
+  }
+  return true;
+}
+
+function assertEffectDurationWithinTimeRange(
+  availabilityData,
+  timeOffsData,
+  start
+) {}
+
+async function assertNoAppointmentOverlap(
   client,
   stylistId,
   start,
@@ -59,6 +130,17 @@ async function assertStylistAvailable(
     `,
     params
   );
+
+  // const overlapTimeOff = await client.query (
+  //   `SELECT id
+  //   FROm stylist_time_offs
+  //   WHERE stylist_id = $1
+  //   AND tstzrange(start_datetime, end_datetime, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+  //   ${excludeClause}
+  //   LIMIT 1
+  //   `,
+  //   params
+  // );
 
   if (overlapRes.rows[0]) {
     throw new Error("stylist is not available at that time");
@@ -140,10 +222,8 @@ function mapRescheduleDbError(err) {
   return err;
 }
 
-export async function findAll () {
-  const { rows } = await pool.query(
-    `SELECT * FROM appointments ORDER BY id`
-  )
+export async function findAll() {
+  const { rows } = await pool.query(`SELECT * FROM appointments ORDER BY id`);
   return rows ?? null;
 }
 
@@ -163,6 +243,7 @@ export async function book({
   );
   const stylistId = validateId(stylist_id, "stylist_id");
   const start = validateTime(start_time);
+  assertStartTimeNotPast(start);
 
   const dbClient = await pool.connect();
 
@@ -197,11 +278,36 @@ export async function book({
     }
 
     const clientNameSnapshot = await getClientSnapshot(dbClient, clientId);
-    const config = await getActiveServiceConfiguration(dbClient, serviceConfigurationId);
+    const config = await getActiveServiceConfiguration(
+      dbClient,
+      serviceConfigurationId
+    );
 
-    const end = new Date(start.getTime() + Number(config.duration_minutes) * 60000);
+    const end = new Date(
+      start.getTime() + Number(config.duration_minutes) * 60000
+    );
 
-    await assertStylistAvailable(dbClient, stylistId, start, end);
+    const availabilityData = await dbClient.query(
+      `SELECT day_of_week, start_time, end_time FROM stylist_availability WHERE stylist_id = $1`,
+      [stylist_id]
+    );
+
+    if (!availabilityData.rows[0]) {
+      throw `No availability data found for ${stylistId}`;
+    }
+    assertStylistIsAvailable(availabilityData, stylistId, start, config);
+
+    const timeOffsData = await dbClient.query(
+      `SELECT start_datettime, end_datettime FROM stylist_time_offs WHERE stylist_id = $1 AND end_datetime > NOW()`,
+      [stylist_id]
+    );
+
+    //check for time off overlap if time off data exists
+    if (timeOffsData.rows[0]) {
+      assertNoTimeOffOverlap(timeOffsData, stylistId, start, config);
+    }
+
+    await assertNoAppointmentOverlap(dbClient, stylistId, start, end);
 
     const insertRes = await dbClient.query(
       `
@@ -282,6 +388,7 @@ export async function cancel(id) {
 export async function reschedule(id, newStartTime) {
   const numericId = validateId(id);
   const start = validateTime(newStartTime);
+  assertStartTimeNotPast(start);
 
   const dbClient = await pool.connect();
 
@@ -300,7 +407,13 @@ export async function reschedule(id, newStartTime) {
     const { duration_snapshot, stylist_id } = apptRes.rows[0];
     const end = new Date(start.getTime() + Number(duration_snapshot) * 60000);
 
-    await assertStylistAvailable(dbClient, stylist_id, start, end, numericId);
+    await assertNoAppointmentOverlap(
+      dbClient,
+      stylist_id,
+      start,
+      end,
+      numericId
+    );
 
     const updateRes = await dbClient.query(
       `
