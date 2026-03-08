@@ -309,6 +309,48 @@ export async function findAll() {
   return rows ?? null;
 }
 
+//TODO
+
+export async function findByClientId(clientId) {
+  const sanitizedId = validateId(clientId, "client id");
+  const { rows } = await pool.query(`
+    SELECT * FROM appointments
+    WHERE client_id = $1
+    ORDER BY start_time ASC
+  `, [sanitizedId]);
+  return rows ?? [];
+}
+
+export async function findByPetId(petId) {
+  const sanitizedId = validateId(petId, "pet id");
+  const { rows } = await pool.query(`
+    SELECT * FROM appointments
+    WHERE pet_id = $1
+    ORDER BY start_time ASC
+  `, [sanitizedId]);
+  return rows ?? [];
+}
+
+export async function findByStylistId(stylistId) {
+  const sanitizedId = validateId(stylistId, "stylist id");
+  const { rows } = await pool.query(`
+    SELECT * FROM appointments
+    WHERE pet_id = $1
+    ORDER BY stylist_id ASC
+  `, [sanitizedId]);
+  return rows ?? [];
+}
+
+export async function findByServiceId(serviceId) {
+  const sanitizedId = validateId(serviceId, "service id");
+  const { rows } = await pool.query(`
+    SELECT * FROM appointments
+    WHERE service_id = $1
+    ORDER BY start_time ASC
+  `, [sanitizedId]);
+  return rows ?? [];
+}
+
 export async function book({
   client_id,
   pet_id,

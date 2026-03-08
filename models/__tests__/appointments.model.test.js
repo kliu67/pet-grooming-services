@@ -13,7 +13,7 @@ vi.mock("../../db.js", () => ({
 }));
 
 import { pool } from "../../db.js";
-import { book, findById, cancel, update } from "../appointments.model.js";
+import { book, findById, cancel, update, findByClientId, findByPetId, findByServiceId, findByStylistId} from "../appointments.model.js";
 
 const FUTURE_START = "2099-01-01T15:00:00.000Z";
 const NEAR_MIDNIGHT_START = "2028-03-01 23:00:00.000 -500";
@@ -436,7 +436,8 @@ describe("book()", () => {
 
 describe("findById()", () => {
   it("returns appointment", async () => {
-    pool.query.mockResolvedValue({ rows: [{ id: 1 }] });
+    pool.query.mockResolvedValue({ 
+      rows: [{ id: 1}] });
     const result = await findById(1);
     expect(result).toEqual({ id: 1 });
   });
@@ -445,6 +446,82 @@ describe("findById()", () => {
     pool.query.mockResolvedValue({ rows: [] });
     const result = await findById(1);
     expect(result).toBeNull();
+  });
+});
+
+describe("findByClientId()", () => {
+      const appointments = [
+      { id: 1 },
+      { id: 2 },
+      { id: 3 }
+    ]
+  it("returns appointment", async () => {
+    pool.query.mockResolvedValue({ rows: appointments });
+    const result = await findByClientId(1);
+    expect(result).toEqual(appointments);
+  });
+
+  it("returns null when not found", async () => {
+    pool.query.mockResolvedValue({ rows: [] });
+    const result = await findByClientId(1);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("findByPetId()", () => {
+      const appointments = [
+      { id: 1 },
+      { id: 2 },
+      { id: 3 }
+    ]
+  it("returns appointment", async () => {
+    pool.query.mockResolvedValue({ rows: appointments });
+    const result = await findByPetId(1);
+    expect(result).toEqual(appointments);
+  });
+
+  it("returns null when not found", async () => {
+    pool.query.mockResolvedValue({ rows: [] });
+    const result = await findByPetId(1);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("findByStylistId()", () => {
+      const appointments = [
+      { id: 1 },
+      { id: 2 },
+      { id: 3 }
+    ]
+  it("returns appointment", async () => {
+    pool.query.mockResolvedValue({ rows: appointments });
+    const result = await findByStylistId(1);
+    expect(result).toEqual(appointments);
+  });
+
+  it("returns null when not found", async () => {
+    pool.query.mockResolvedValue({ rows: [] });
+    const result = await findByStylistId(1);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("findByServiceId()", () => {
+      const appointments = [
+      { id: 1 },
+      { id: 2 },
+      { id: 3 }
+    ]
+  it("returns appointment", async () => {
+    pool.query.mockResolvedValue({ rows: appointments });
+    const result = await findByServiceId(1);
+    expect(result).toEqual(appointments);
+  });
+
+  it("returns null when not found", async () => {
+    pool.query.mockResolvedValue({ rows: [] });
+    const result = await findByServiceId(1);
+    expect(result).toEqual([]);
   });
 });
 
