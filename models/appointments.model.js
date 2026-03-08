@@ -1,8 +1,5 @@
 import { pool } from "../db.js";
-import {
-  parseTimeToMinutes,
-  parseDateToMinutes
-} from "../utils/timeRanges.js";
+import { parseTimeToMinutes, parseDateToMinutes } from "../utils/timeRanges.js";
 import { areIntervalsOverlapping, add } from "date-fns";
 import { computeBuffer } from "../utils/helpers.js";
 function validateId(id, name = "id") {
@@ -45,7 +42,7 @@ function assertStartTimeNotPast(start) {
 
 function assertStartEndOnSameDay(start, end) {
   if (start.getDate() !== end.getDate()) {
-    throw ('start time and end time must be on the same day')
+    throw "start time and end time must be on the same day";
   }
   return true;
 }
@@ -154,6 +151,70 @@ async function getClientSnapshot(client, clientId) {
   return `${first_name} ${last_name}`.trim();
 }
 
+async function getClient(dbClient, clientId) {
+  const userRes = await dbClient.query(
+    `
+    SELECT id, first_name, last_name
+    FROM users
+    WHERE id = $1
+    `,
+    [clientId]
+  );
+
+  if (!userRes.rows[0]) {
+    throw new Error("client not found");
+  }
+
+  return userRes.rows[0];
+}
+
+async function getPet(dbClient, petId) {
+  const petRes = await dbClient.query(
+    `
+    SELECT id, name, breed, owner, weigth_class_id
+    FROM pets
+    WHERE id = $1
+    `,
+    [petId]
+  );
+
+  if (!petRes.rows[0]) {
+    throw new Error("pet not found");
+  }
+
+  return petRes.rows[0];
+}
+
+async function getStylist(dbClient, petId) {
+  const stylistRes = await dbClient.query(
+    `
+      SELECT id, first_name, last_name, email, phone, is_active, uuid, created_at
+      FROM stylists
+      WHERE id = $1
+      `,
+    [petId]
+  );
+
+  if (!stylistRes.rows[0]) {
+    throw new Error("stylist not found");
+  }
+
+  return stylistRes.rows[0];
+}
+
+async function getService(dbClient, serviceId) {
+  const serviceRes = await dbClient.query(
+    `SELECT id, name, base_price, description, uuid, created_at FROM services
+        WHERE id = $1`,
+    [serviceId]
+  );
+  
+  if (!serviceRes.rows[0]) {
+    throw new Error("service not found");
+  }
+  return serviceRes.rows[0] ?? null;
+}
+
 async function getActiveServiceConfiguration(client, serviceConfigurationId) {
   const cfgRes = await client.query(
     `
@@ -172,6 +233,23 @@ async function getActiveServiceConfiguration(client, serviceConfigurationId) {
 
   return cfgRes.rows[0];
 }
+
+// async function getActiveServiceConfigurationByFKs(
+//   client,
+//   petId,
+//   breedId,
+//   serviceId
+// ) {
+//   const cfgRes = await client.query(
+//     `
+//      SELECT sc.id, sc.price, sc.duration_minutes, s.name AS service_name
+//     FROM service_configurations sc
+//     JOIN services s ON s.id = sc.service_id
+//     WHERE sc.service_id = $1, sc.pet_id =
+//       AND sc.is_active = TRUE
+//     `
+//   );
+// }
 
 function mapBookingDbError(err) {
   if (err.code === "23P01") {
@@ -209,6 +287,11 @@ function mapRescheduleDbError(err) {
   }
 
   return err;
+}
+
+function mapNotFoundError(err, entity) {
+  if (err.code === "23503")
+    throw new Error(`Invalid ${entity}: ${entity} not found in DB.`);
 }
 
 export async function findAll() {
@@ -263,7 +346,7 @@ export async function book({
     );
 
     if (!stylistRes.rows[0]) {
-      throw new Error("Stylist not found.");
+      throw new Error("stylist not found");
     }
 
     const clientNameSnapshot = await getClientSnapshot(dbClient, clientId);
@@ -378,44 +461,237 @@ export async function cancel(id) {
   return rows[0];
 }
 
-export async function reschedule(id, newStartTime) {
-  const numericId = validateId(id);
-  const start = validateTime(newStartTime);
-  assertStartTimeNotPast(start);
+// export async function reschedule(id, newStartTime) {
+//   const numericId = validateId(id);
+//   const start = validateTime(newStartTime);
+//   assertStartTimeNotPast(start);
 
+//   const dbClient = await pool.connect();
+
+//   try {
+//     await dbClient.query("BEGIN");
+
+//     const apptRes = await dbClient.query(
+//       `SELECT * FROM appointments WHERE id = $1 FOR UPDATE`,
+//       [numericId]
+//     );
+
+//     if (!apptRes.rows[0]) {
+//       throw new Error("appointment not found");
+//     }
+
+//     const { duration_snapshot, stylist_id } = apptRes.rows[0];
+//     const end = new Date(start.getTime() + Number(duration_snapshot) * 60000);
+
+//     assertStartEndOnSameDay(start, end);
+
+//     const availabilityData = await dbClient.query(
+//       `SELECT day_of_week, start_time, end_time FROM stylist_availability WHERE stylist_id = $1`,
+//       [stylist_id]
+//     );
+
+//     if (!availabilityData.rows[0]) {
+//       throw `No availability data found for ${stylistId}`;
+//     }
+//     //stylist must have availability
+//     assertStylistIsAvailable(availabilityData, stylistId, start, end);
+
+//     const timeOffsData = await dbClient.query(
+//       `SELECT start_datettime, end_datettime FROM stylist_time_offs WHERE stylist_id = $1 AND end_datetime > NOW()`,
+//       [stylist_id]
+//     );
+
+//     //check for time off overlap if time off data exists
+//     if (timeOffsData.rows[0]) {
+//       assertNoTimeOffOverlap(timeOffsData, stylistId, start, config);
+//     }
+
+//     //appointment cannot overlap with another appointment
+//     await assertNoAppointmentOverlap(dbClient, stylistId, start, end);
+
+//     await assertNoAppointmentOverlap(
+//       dbClient,
+//       stylist_id,
+//       start,
+//       end,
+//       numericId
+//     );
+
+//     const updateRes = await dbClient.query(
+//       `
+//       UPDATE appointments
+//       SET start_time = $1,
+//           end_time = $2,
+//           status = 'booked'
+//       WHERE id = $3
+//       RETURNING *
+//       `,
+//       [start, end, numericId]
+//     );
+
+//     await dbClient.query("COMMIT");
+//     return updateRes.rows[0];
+//   } catch (err) {
+//     await dbClient.query("ROLLBACK");
+//     throw mapRescheduleDbError(err);
+//   } finally {
+//     dbClient.release();
+//   }
+// }
+
+export async function update(id, updates) {
+  const appId = validateId(id);
+
+  if (!updates || Object.keys(updates).length === 0) {
+    throw new Error("no fields provided for update");
+  }
+
+  const fields = [];
+  const values = [];
+  let index = 1;
+  let client, pet, stylist, service;
+  const { serviceConfigurationId } = updates;
+  let appointment;
   const dbClient = await pool.connect();
 
   try {
     await dbClient.query("BEGIN");
-
-    const apptRes = await dbClient.query(
-      `SELECT * FROM appointments WHERE id = $1 FOR UPDATE`,
-      [numericId]
+    appointment = await dbClient.query(
+      "SELECT * FROM appointments WHERE id = $1",
+      [appId]
     );
+    if (!appointment) throw "appointment not found";
+  } catch (err) {
+    mapNotFoundError(err, "appointment");
+  }
 
-    if (!apptRes.rows[0]) {
-      throw new Error("appointment not found");
+  //update client
+  if ("clientId" in updates) {
+    const clientId = validateId(updates.clientId);
+    fields.push(`client_id = $${index++}`);
+    values.push(clientId);
+
+    client = await getClient(dbClient, clientId);
+  }
+
+  //update pet
+  if ("petId" in updates) {
+    const petId = validateId(updates.petId);
+    fields.push(`pet_id = $${index++}`);
+    values.push(petId);
+
+    pet = await getPet(dbClient, petId);
+    //check if there is pet overlap. DB should be able to handle
+  }
+
+  //update stylist
+  if ("stylistId" in updates) {
+    const stylistId = validateId(updates.stylistId);
+    fields.push(`stylist_id = $${index++}`);
+    values.push(stylistId);
+
+    stylist = await getStylist(dbClient, stylistId);
+    if (!stylist) {
+      throw new Error("stylist not found");
     }
 
-    const { duration_snapshot, stylist_id } = apptRes.rows[0];
-    const end = new Date(start.getTime() + Number(duration_snapshot) * 60000);
+    // try {
+    //   stylist = await pool.query(`SELECT id FROM stylist WHERE id = $1`, [
+    //     stylistId
+    //   ]);
+    //   if (!stylist) throw "stylist not found";
+    // } catch (err) {
+    //   //DB check strylist overlap constraint
+    //   mapNotFoundError(err, "stylist");
+    // }
+  }
 
-    assertStartEndOnSameDay(start, end);
+  //update service
+  if ("serviceId" in updates) {
+    const serviceId = validateId(updates.serviceId);
+    fields.push(`service_id = $${index++}`);
+    values.push(serviceId);
 
-    const availabilityData = await dbClient.query(
-      `SELECT day_of_week, start_time, end_time FROM stylist_availability WHERE stylist_id = $1`,
-      [stylist_id]
+    service = await getService(dbClient, serviceId);
+    // try {
+    //   service = await pool.query(`SELECT id FROM services WHERE id = $1`, [
+    //     serviceId
+    //   ]);
+    //   if (!service) throw "service not found";
+    // } catch (err) {
+    //   mapNotFoundError(err, "service");
+    // }
+
+    const newConfig = await getActiveServiceConfiguration(
+      dbClient,
+      serviceConfigurationId
     );
 
+    if (newConfig.duration_minutes !== appointment.duration_snapshot) {
+      const { start, stylistId } = appointment;
+      //check if new appointment end time is valid;
+      const end = new Date(
+        start.getTime() + Number(newConfig.duration_minutes) * 60000
+      );
+      assertStartEndOnSameDay(start, end);
+
+      //stylist must have availability
+      const availabilityData = await dbClient.query(
+        `SELECT day_of_week, start_time, end_time FROM stylist_availability WHERE stylist_id = $1`,
+        [stylistId]
+      );
+      if (!availabilityData.rows[0]) {
+        throw `No availability data found for ${stylistId}`;
+      }
+
+      assertStylistIsAvailable(availabilityData, stylistId, start, end);
+
+      const timeOffsData = await dbClient.query(
+        `SELECT start_datettime, end_datettime FROM stylist_time_offs WHERE stylist_id = $1 AND end_datetime > NOW()`,
+        [stylistId]
+      );
+
+      //check for time off overlap if time off data exists
+      if (timeOffsData.rows[0]) {
+        assertNoTimeOffOverlap(timeOffsData, stylistId, start, newConfig);
+      }
+
+      //appointment cannot overlap with another appointment
+      await assertNoAppointmentOverlap(client, stylistId, start, end);
+    }
+  }
+
+  if ("startTime" in updates) {
+    const start = validateTime(updates.startTime);
+      assertStartTimeNotPast(start);
+
+    fields.push(`service_id = $${index++}`);
+    values.push(start);
+    const { stylistId } = appointment;
+    const config = await getActiveServiceConfiguration(
+      dbClient,
+      serviceConfigurationId
+    );
+
+    const end = new Date(
+      start.getTime() + Number(config.duration_minutes) * 60000
+    );
+    //appointment start and end must be on the same day
+    assertStartEndOnSameDay(start, end);
+    const availabilityData = await dbClient.query(
+      `SELECT day_of_week, start_time, end_time FROM stylist_availability WHERE stylist_id = $1`,
+      [stylistId]
+    );
     if (!availabilityData.rows[0]) {
       throw `No availability data found for ${stylistId}`;
     }
+
     //stylist must have availability
     assertStylistIsAvailable(availabilityData, stylistId, start, end);
 
     const timeOffsData = await dbClient.query(
       `SELECT start_datettime, end_datettime FROM stylist_time_offs WHERE stylist_id = $1 AND end_datetime > NOW()`,
-      [stylist_id]
+      [stylistId]
     );
 
     //check for time off overlap if time off data exists
@@ -424,35 +700,32 @@ export async function reschedule(id, newStartTime) {
     }
 
     //appointment cannot overlap with another appointment
-    await assertNoAppointmentOverlap(dbClient, stylistId, start, end);
+    await assertNoAppointmentOverlap(client, stylistId, start, end);
+  }
+  if ("status" in updates) {
+    //TO DO: mutate status
+  }
 
-
-    await assertNoAppointmentOverlap(
-      dbClient,
-      stylist_id,
-      start,
-      end,
-      numericId
-    );
-
-    const updateRes = await dbClient.query(
+  try {
+    const { rows } = await dbClient.query(
       `
       UPDATE appointments
-      SET start_time = $1,
-          end_time = $2,
-          status = 'booked'
-      WHERE id = $3
+      SET ${fields.join(", ")}, updated_at = NOW()
+      WHERE id = $${index}
       RETURNING *
       `,
-      [start, end, numericId]
+      values
     );
 
-    await dbClient.query("COMMIT");
-    return updateRes.rows[0];
+    if (!rows[0]) {
+      throw new Error("appointment not found");
+    }
+
+    return rows[0];
   } catch (err) {
-    await dbClient.query("ROLLBACK");
-    throw mapRescheduleDbError(err);
-  } finally {
-    dbClient.release();
+    if (err.code === "23503") {
+      throw new Error("invalid appointment");
+    }
+    throw err;
   }
 }
