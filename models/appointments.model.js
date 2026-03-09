@@ -2,6 +2,15 @@ import { pool } from "../db.js";
 import { parseTimeToMinutes, parseDateToMinutes } from "../utils/timeRanges.js";
 import { areIntervalsOverlapping, add } from "date-fns";
 import { computeBuffer } from "../utils/helpers.js";
+
+const DB_FIELDS = {
+  appointments: {
+    clientId: "client_id",
+    petId: "pet_id",
+    serviceId: "service_id",
+  }
+};
+
 function validateId(id, name = "id") {
   const n = Number(id);
   if (!Number.isInteger(n) || n <= 0) {
@@ -47,12 +56,12 @@ function assertStartEndOnSameDay(start, end) {
   return true;
 }
 
-async function assertPetHasOwner(dbClient, petId, clientId){
+async function assertPetHasOwner(dbClient, petId, clientId) {
   const petRes = await getPet(dbClient, petId);
-   if (petRes.owner !== clientId) {
-      throw new Error("pet does not belong to client");
-    }
-    return;
+  if (petRes.owner !== clientId) {
+    throw new Error("pet does not belong to client");
+  }
+  return;
 }
 async function assertStylistExists(dbClient, stylistId) {
   const stylistRes = await dbClient.query(
@@ -81,7 +90,7 @@ async function assertServiceExists(dbClient, serviceId) {
   if (!serviceRes.rows[0]) {
     throw new Error("service not found");
   }
-  return
+  return;
 }
 
 function assertStylistIsAvailable(availabilityData, stylistId, start, end) {

@@ -3,7 +3,7 @@ import {
   bookAppointment,
   getAppointmentById,
   cancelAppointment,
-  rescheduleAppointment,
+  updateAppointment,
   getAllAppointments
 } from "../controllers/appointments.controller.js";
 
@@ -13,6 +13,6 @@ appointmentRoutes.get("/", getAllAppointments)
 appointmentRoutes.post("/", bookAppointment);
 appointmentRoutes.get("/:id", getAppointmentById);
 appointmentRoutes.patch("/:id/cancel", cancelAppointment);
-appointmentRoutes.patch("/:id/reschedule", rescheduleAppointment);
+appointmentRoutes.patch("/:id/update", updateAppointment);
 
 export default appointmentRoutes;

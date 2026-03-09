@@ -72,12 +72,12 @@ export async function cancelAppointment(req, res) {
   }
 }
 
-export async function rescheduleAppointment(req, res) {
+export async function updateAppointment(req, res) {
   try {
     const { id } = req.params;
-    const { start_time } = req.body;
+    const { startTime } = req.body;
 
-    const updated = await Appointment.reschedule(id, start_time);
+    const updated = await Appointment.update(id, startTime);
     return res.status(200).json(updated);
   } catch (err) {
     if (err.message === "appointment not found") {

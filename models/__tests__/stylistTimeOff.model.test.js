@@ -52,7 +52,7 @@ describe("stylistTimeOff.model", () => {
     const result = await create(payload);
     expect(result).toEqual(row);
     expect(pool.query).toHaveBeenCalledWith(
-      expect.stringContaining("INSERT INTO stylist_time_off"),
+      expect.stringContaining("INSERT INTO stylist_time_offs"),
       [
         1,
         new Date(payload.start_datetime).toISOString(),
