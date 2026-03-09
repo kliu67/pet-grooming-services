@@ -13,7 +13,17 @@ vi.mock("../../db.js", () => ({
 }));
 
 import { pool } from "../../db.js";
-import { book, findById, cancel, update, findByClientId, findByPetId, findByServiceId, findByStylistId} from "../appointments.model.js";
+import {
+  book,
+  findById,
+  cancel,
+  update,
+  findAll,
+  findByClientId,
+  findByPetId,
+  findByServiceId,
+  findByStylistId
+} from "../appointments.model.js";
 
 const FUTURE_START = "2099-01-01T15:00:00.000Z";
 const NEAR_MIDNIGHT_START = "2028-03-01 23:00:00.000 -500";
@@ -102,7 +112,7 @@ const mockServiceConfiguration = {
   price: 30,
   duration_minutes: 60,
   buffer_minutes: 20
-}
+};
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -110,6 +120,90 @@ beforeEach(() => {
   mockRelease.mockReset();
 });
 
+describe("findAll()", () => {
+  it("returns appointments", async () => {
+    pool.query.mockResolvedValue({
+      rows: [{ id: 1 }, { id: 2 }, { id: 3 }]
+    });
+    const result = await findAll();
+    expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+  });
+});
+describe("findById()", () => {
+  it("returns appointment", async () => {
+    pool.query.mockResolvedValue({
+      rows: [{ id: 1 }]
+    });
+    const result = await findById(1);
+    expect(result).toEqual({ id: 1 });
+  });
+
+  it("returns null when not found", async () => {
+    pool.query.mockResolvedValue({ rows: [] });
+    const result = await findById(1);
+    expect(result).toBeNull();
+  });
+});
+
+describe("findByClientId()", () => {
+  const appointments = [{ id: 1 }, { id: 2 }, { id: 3 }];
+  it("returns appointment", async () => {
+    pool.query.mockResolvedValue({ rows: appointments });
+    const result = await findByClientId(1);
+    expect(result).toEqual(appointments);
+  });
+
+  it("returns null when not found", async () => {
+    pool.query.mockResolvedValue({ rows: [] });
+    const result = await findByClientId(1);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("findByPetId()", () => {
+  const appointments = [{ id: 1 }, { id: 2 }, { id: 3 }];
+  it("returns appointment", async () => {
+    pool.query.mockResolvedValue({ rows: appointments });
+    const result = await findByPetId(1);
+    expect(result).toEqual(appointments);
+  });
+
+  it("returns null when not found", async () => {
+    pool.query.mockResolvedValue({ rows: [] });
+    const result = await findByPetId(1);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("findByStylistId()", () => {
+  const appointments = [{ id: 1 }, { id: 2 }, { id: 3 }];
+  it("returns appointment", async () => {
+    pool.query.mockResolvedValue({ rows: appointments });
+    const result = await findByStylistId(1);
+    expect(result).toEqual(appointments);
+  });
+
+  it("returns null when not found", async () => {
+    pool.query.mockResolvedValue({ rows: [] });
+    const result = await findByStylistId(1);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("findByServiceId()", () => {
+  const appointments = [{ id: 1 }, { id: 2 }, { id: 3 }];
+  it("returns appointment", async () => {
+    pool.query.mockResolvedValue({ rows: appointments });
+    const result = await findByServiceId(1);
+    expect(result).toEqual(appointments);
+  });
+
+  it("returns null when not found", async () => {
+    pool.query.mockResolvedValue({ rows: [] });
+    const result = await findByServiceId(1);
+    expect(result).toEqual([]);
+  });
+});
 describe("book()", () => {
   it("creates appointment successfully", async () => {
     mockQuery
@@ -124,12 +218,8 @@ describe("book()", () => {
           { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
         ]
       }) // config
-      .mockResolvedValueOnce({
-        rows: availabilityRows
-      }) //availability
-      .mockResolvedValueOnce({
-        rows: timeOffRows
-      }) //time offs
+      .mockResolvedValueOnce({ rows: availabilityRows }) //availability
+      .mockResolvedValueOnce({ rows: timeOffRows }) //time offs
       .mockResolvedValueOnce({ rows: [] }) // overlap check
       .mockResolvedValueOnce({ rows: [{ id: 99, status: "booked" }] }) // insert
       .mockResolvedValueOnce(); // COMMIT
@@ -298,15 +388,8 @@ describe("book()", () => {
           { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
         ]
       }) //service config
-      .mockResolvedValueOnce({
-        rows: availabilityRows
-      }) //availability
-      // .mockResolvedValueOnce({ rows: [{ id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }] }) //timeoff
+      .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: [] })
-      .mockRejectedValueOnce({
-        code: "P0001",
-        message: "appointment overlaps stylist time off"
-      })
       .mockResolvedValueOnce(); // ROLLBACK
 
     await expect(
@@ -434,97 +517,6 @@ describe("book()", () => {
   });
 });
 
-describe("findById()", () => {
-  it("returns appointment", async () => {
-    pool.query.mockResolvedValue({ 
-      rows: [{ id: 1}] });
-    const result = await findById(1);
-    expect(result).toEqual({ id: 1 });
-  });
-
-  it("returns null when not found", async () => {
-    pool.query.mockResolvedValue({ rows: [] });
-    const result = await findById(1);
-    expect(result).toBeNull();
-  });
-});
-
-describe("findByClientId()", () => {
-      const appointments = [
-      { id: 1 },
-      { id: 2 },
-      { id: 3 }
-    ]
-  it("returns appointment", async () => {
-    pool.query.mockResolvedValue({ rows: appointments });
-    const result = await findByClientId(1);
-    expect(result).toEqual(appointments);
-  });
-
-  it("returns null when not found", async () => {
-    pool.query.mockResolvedValue({ rows: [] });
-    const result = await findByClientId(1);
-    expect(result).toEqual([]);
-  });
-});
-
-describe("findByPetId()", () => {
-      const appointments = [
-      { id: 1 },
-      { id: 2 },
-      { id: 3 }
-    ]
-  it("returns appointment", async () => {
-    pool.query.mockResolvedValue({ rows: appointments });
-    const result = await findByPetId(1);
-    expect(result).toEqual(appointments);
-  });
-
-  it("returns null when not found", async () => {
-    pool.query.mockResolvedValue({ rows: [] });
-    const result = await findByPetId(1);
-    expect(result).toEqual([]);
-  });
-});
-
-describe("findByStylistId()", () => {
-      const appointments = [
-      { id: 1 },
-      { id: 2 },
-      { id: 3 }
-    ]
-  it("returns appointment", async () => {
-    pool.query.mockResolvedValue({ rows: appointments });
-    const result = await findByStylistId(1);
-    expect(result).toEqual(appointments);
-  });
-
-  it("returns null when not found", async () => {
-    pool.query.mockResolvedValue({ rows: [] });
-    const result = await findByStylistId(1);
-    expect(result).toEqual([]);
-  });
-});
-
-describe("findByServiceId()", () => {
-      const appointments = [
-      { id: 1 },
-      { id: 2 },
-      { id: 3 }
-    ]
-  it("returns appointment", async () => {
-    pool.query.mockResolvedValue({ rows: appointments });
-    const result = await findByServiceId(1);
-    expect(result).toEqual(appointments);
-  });
-
-  it("returns null when not found", async () => {
-    pool.query.mockResolvedValue({ rows: [] });
-    const result = await findByServiceId(1);
-    expect(result).toEqual([]);
-  });
-});
-
 describe("cancel()", () => {
   it("cancels appointment", async () => {
     pool.query.mockResolvedValue({ rows: [{ id: 1, status: "cancelled" }] });
@@ -558,8 +550,8 @@ describe("update()", () => {
 
   const mockService = {
     id: 99,
-    name: 'test service'
-  }
+    name: "test service"
+  };
 
   it("Update throws when update is empty", async () => {
     await expect(update(1, {})).rejects.toThrow(
@@ -623,7 +615,7 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
-      .mockResolvedValueOnce({ rows: [{ id: 999, name: 'test service' }] }) //service
+      .mockResolvedValueOnce({ rows: [{ id: 999, name: "test service" }] }) //service
       .mockResolvedValueOnce({ rows: [] }); //service configuration
 
     await expect(
@@ -648,7 +640,7 @@ describe("update()", () => {
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
       .mockResolvedValueOnce({ rows: [mockService] }) //service
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] }) //service configuration
-      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce(); // BEGIN
 
     await expect(
       update(APPOINTMENT_ID, {
@@ -704,7 +696,7 @@ describe("update()", () => {
         end_datetime: "2026-03-10 17:00:00.000 -0500",
         reason: "Emergency"
       }
-    ]
+    ];
 
     mockQuery
       .mockResolvedValueOnce() // BEGIN
@@ -726,6 +718,12 @@ describe("update()", () => {
   });
 
   it("Update start time - throws when start_time is in the past", async () => {
+     mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
+      .mockResolvedValueOnce({ rows: [mockService] }) //service
+      .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
+      .mockResolvedValueOnce(); // ROLLBACK
     await expect(
       update(APPOINTMENT_ID, {
         startTime: "2000-01-01T00:00:00.000Z"
@@ -735,13 +733,12 @@ describe("update()", () => {
     expect(mockQuery).toHaveBeenCalled(2);
   });
 
-
   it("Update start time - throws when appointment is over two days", async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
-      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce(); // BEGIN
 
     await expect(
       update(APPOINTMENT_ID, {
@@ -789,7 +786,6 @@ describe("update()", () => {
   });
 
   it(`Update start time throws when appointment time overlaps with stylist's time off`, async () => {
-
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
@@ -808,10 +804,9 @@ describe("update()", () => {
   });
 
   it("Update successfully", async () => {
-
     const futureStart = "2036-10-06T15:00:00.000Z";
     const futureEnd = "2036-10-06T16:00:00.000Z";
-    const futureEffectiveEnd = "2036-10-06T16:20:00.000Z"
+    const futureEffectiveEnd = "2036-10-06T16:20:00.000Z";
     const mockUpdatedAppointment = {
       id: 2,
       client_id: 2,
@@ -826,7 +821,7 @@ describe("update()", () => {
       price_snapshot: 30,
       duration_snapshot: 60,
       created_at: "2026-03-05 21:30:35.270 -0500"
-    }
+    };
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
