@@ -2,6 +2,7 @@ import { pool } from "../db.js";
 import { parseTimeToMinutes, parseDateToMinutes } from "../utils/timeRanges.js";
 import { areIntervalsOverlapping, add } from "date-fns";
 import { computeBuffer } from "../utils/helpers.js";
+import { validateDescription } from "../validators/validator.js";
 
 const DB_FIELDS = {
   appointments: {
@@ -215,7 +216,7 @@ async function getClient(dbClient, clientId) {
 async function getPet(dbClient, petId) {
   const petRes = await dbClient.query(
     `
-    SELECT id, name, breed, owner, weigth_class_id
+    SELECT id, name, breed, owner, weight_class_id
     FROM pets
     WHERE id = $1
     `,
@@ -262,7 +263,7 @@ async function getService(dbClient, serviceId) {
 async function getActiveServiceConfiguration(dbClient, serviceConfigurationId) {
   const cfgRes = await dbClient.query(
     `
-    SELECT sc.id, sc.price, sc.duration_minutes, s.name AS service_name
+    SELECT sc.id, sc.price, sc.duration_minutes, s.name AS service_name, sc.buffer_minutes
     FROM service_configurations sc
     JOIN services s ON s.id = sc.service_id
     WHERE sc.id = $1
@@ -308,7 +309,7 @@ async function getAvailability(dbClient, stylistId) {
 
 async function getTimeOff(dbClient, stylistId) {
   const timeOffRes = await dbClient.query(
-    `SELECT start_datettime, end_datettime FROM stylist_time_offs WHERE stylist_id = $1 AND end_datetime > NOW()`,
+    `SELECT start_datetime, end_datetime FROM stylist_time_offs WHERE stylist_id = $1 AND end_datetime > NOW()`,
     [stylistId]
   );
   return timeOffRes.rows ?? [];
@@ -439,6 +440,7 @@ export async function findByServiceId(serviceId) {
 export async function book({
   client_id: clientId,
   pet_id: petId,
+  service_id: serviceId,
   service_configuration_id: serviceConfigurationId,
   stylist_id: stylistId,
   start_time: startTime,
@@ -446,6 +448,7 @@ export async function book({
 }) {
   clientId = validateId(clientId, "client_id");
   petId = validateId(petId, "pet_id");
+  serviceId = validateId(serviceId, "service_id");
   serviceConfigurationId = validateId(
     serviceConfigurationId,
     "service_configuration_id"
@@ -455,6 +458,7 @@ export async function book({
   assertStartTimeNotPast(start);
 
   const dbClient = await pool.connect();
+  validateDescription(description);
 
   try {
     await dbClient.query("BEGIN");
@@ -469,7 +473,7 @@ export async function book({
     const clientNameSnapshot = await getClientSnapshot(dbClient, clientId);
 
     //service must exist
-    // await assertServiceExists(dbClient, serviceId);
+    await assertServiceExists(dbClient, serviceId);
 
     //service configuration must exist
     const config = await getActiveServiceConfiguration(
@@ -478,6 +482,10 @@ export async function book({
     );
     const end = new Date(
       start.getTime() + Number(config.duration_minutes) * 60000
+    );
+
+    const effectiveEnd = new Date(
+      start.getTime() + Number(config.duration_minutes) * 60000 + Number(config.buffer_minutes) * 60000
     );
 
     //appointment start and end must be on the same day
@@ -494,27 +502,28 @@ export async function book({
     //appointment cannot overlap with another appointment
     await assertNoAppointmentOverlap(dbClient, stylistId, start, end);
 
+    const status = 'booked';
+
     const insertRes = await dbClient.query(
       `
       INSERT INTO appointments
-        (client_id, pet_id, service_configuration_id, stylist_id,
-         client_name_snapshot, service_name_snapshot,
-         start_time, end_time, price_snapshot, duration_snapshot, description)
+        (client_id, pet_id, service_id, stylist_id,
+         start_time, end_time, effective_end_time, price_snapshot, duration_snapshot, description, status)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
       `,
       [
         clientId,
         petId,
-        serviceConfigurationId,
+        serviceId,
         stylistId,
-        clientNameSnapshot,
-        config.service_name,
         start,
         end,
+        effectiveEnd,
         config.price,
         config.duration_minutes,
-        description
+        description,
+        status
       ]
     );
 
