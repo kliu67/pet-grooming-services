@@ -7,9 +7,9 @@ vi.mock("../../db.js", () => ({
     query: vi.fn(),
     connect: vi.fn(() => ({
       query: mockQuery,
-      release: mockRelease
-    }))
-  }
+      release: mockRelease,
+    })),
+  },
 }));
 
 import { pool } from "../../db.js";
@@ -22,7 +22,7 @@ import {
   findByClientId,
   findByPetId,
   findByServiceId,
-  findByStylistId
+  findByStylistId,
 } from "../appointments.model.js";
 
 const FUTURE_START = "2099-01-01T15:00:00.000Z";
@@ -33,28 +33,28 @@ const availabilityRows = [
   {
     day_of_week: 1,
     start_time: "09:00:00",
-    end_time: "17:00:00"
+    end_time: "17:00:00",
   },
   {
     day_of_week: 2,
     start_time: "09:00:00",
-    end_time: "17:00:00"
+    end_time: "17:00:00",
   },
   {
     day_of_week: 3,
     start_time: "09:00:00",
-    end_time: "17:00:00"
+    end_time: "17:00:00",
   },
   {
     day_of_week: 4,
     start_time: "09:00:00",
-    end_time: "17:00:00"
+    end_time: "17:00:00",
   },
   {
     day_of_week: 5,
     start_time: "09:00:00",
-    end_time: "17:00:00"
-  }
+    end_time: "17:00:00",
+  },
 ];
 
 const timeOffRows = [
@@ -62,48 +62,56 @@ const timeOffRows = [
     stylist_id: 1,
     start_datetime: "2026-03-10 01:00:00.000 -0400",
     end_datetime: "2026-03-13 00:59:59.000 -0400",
-    reason: "Sick leave"
+    reason: "Sick leave",
   },
 
   {
     stylist_id: 2,
     start_datetime: "2026-03-15 00:00:00.000 -0500",
     end_datetime: "2026-03-15 12:00:00.000 -0500",
-    reason: "Dentist appointment"
+    reason: "Dentist appointment",
   },
 
   {
     stylist_id: 2,
     start_datetime: "2026-03-20 3:15:00.000 -0500",
     end_datetime: "2026-03-20 4:45:00.000 -0500",
-    reason: "Drop off kid"
+    reason: "Drop off kid",
   },
 
   {
     stylist_id: 3,
     start_datetime: "2036-10-07 00:00:00.000 -0500",
     end_datetime: "2036-10-08 00:00:00.000 -0500",
-    reason: "birthday"
+    reason: "birthday",
   },
   {
     stylist_id: 3,
     start_datetime: "2036-07-01 00:00:00.000 -0500",
     end_datetime: "2036-07-02 00:00:00.000 -0500",
-    reason: "Canada Day"
+    reason: "Canada Day",
   },
   {
     stylist_id: 3,
     start_datetime: "2036-09-01 00:00:00.000 -0500",
     end_datetime: "2036-09-02 00:00:00.000 -0500",
-    reason: "Labor Day"
+    reason: "Labor Day",
   },
   {
     stylist_id: 3,
     start_datetime: "2036-04-11 00:00:00.000 -0500",
     end_datetime: "2036-04-12 00:00:00.000 -0500",
-    reason: "Good Friday"
-  }
+    reason: "Good Friday",
+  },
 ];
+
+const mockPet = {
+  id: 1,
+  name: "Lou",
+  breed: 50,
+  owner: 100,
+  weight_class_id: 1,
+};
 
 const mockServiceConfiguration = {
   breed_id: 1,
@@ -111,7 +119,7 @@ const mockServiceConfiguration = {
   weight_class_id: 1,
   price: 30,
   duration_minutes: 60,
-  buffer_minutes: 20
+  buffer_minutes: 20,
 };
 
 beforeEach(() => {
@@ -123,7 +131,7 @@ beforeEach(() => {
 describe("findAll()", () => {
   it("returns appointments", async () => {
     pool.query.mockResolvedValue({
-      rows: [{ id: 1 }, { id: 2 }, { id: 3 }]
+      rows: [{ id: 1 }, { id: 2 }, { id: 3 }],
     });
     const result = await findAll();
     expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
@@ -132,7 +140,7 @@ describe("findAll()", () => {
 describe("findById()", () => {
   it("returns appointment", async () => {
     pool.query.mockResolvedValue({
-      rows: [{ id: 1 }]
+      rows: [{ id: 1 }],
     });
     const result = await findById(1);
     expect(result).toEqual({ id: 1 });
@@ -211,12 +219,12 @@ describe("book()", () => {
       .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) // pet lock
       .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
       .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) // client snapshot
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
-        ]
+          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+        ],
       }) // config
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: timeOffRows }) //time offs
@@ -229,7 +237,7 @@ describe("book()", () => {
       pet_id: 1,
       service_configuration_id: 10,
       stylist_id: 2,
-      start_time: FUTURE_START
+      start_time: FUTURE_START,
     });
 
     expect(result).toEqual({ id: 99, status: "booked" });
@@ -242,18 +250,18 @@ describe("book()", () => {
       .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
       .mockResolvedValueOnce({ rows: [{ id: 2 }] })
       .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       })
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
-        ]
+          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+        ],
       })
       .mockResolvedValueOnce({
-        rows: availabilityRows
+        rows: availabilityRows,
       }) //availability
       .mockResolvedValueOnce({
-        rows: timeOffRows
+        rows: timeOffRows,
       }) //time offs
       .mockResolvedValueOnce({ rows: [] })
       .mockRejectedValueOnce({ code: "23503" }) // insert
@@ -265,8 +273,8 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START
-      })
+        start_time: FUTURE_START,
+      }),
     ).rejects.toThrow("invalid client, pet, stylist, or service configuration");
   });
 
@@ -281,8 +289,8 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START
-      })
+        start_time: FUTURE_START,
+      }),
     ).rejects.toThrow("pet not found");
   });
 
@@ -297,8 +305,8 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START
-      })
+        start_time: FUTURE_START,
+      }),
     ).rejects.toThrow("pet does not belong to client");
   });
 
@@ -314,8 +322,8 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START
-      })
+        start_time: FUTURE_START,
+      }),
     ).rejects.toThrow("stylist not found");
   });
 
@@ -332,8 +340,8 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START
-      })
+        start_time: FUTURE_START,
+      }),
     ).rejects.toThrow("client not found");
   });
 
@@ -343,10 +351,10 @@ describe("book()", () => {
       .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] })
       .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
       .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) // client snapshot
       .mockResolvedValueOnce({
-        rows: []
+        rows: [],
       }); // config
 
     await expect(
@@ -355,8 +363,8 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START
-      })
+        start_time: FUTURE_START,
+      }),
     ).rejects.toThrow("service configuration not found");
   });
 
@@ -367,8 +375,8 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: "2000-01-01T00:00:00.000Z"
-      })
+        start_time: "2000-01-01T00:00:00.000Z",
+      }),
     ).rejects.toThrow("invalid start_time: cannot be in the past");
 
     expect(mockQuery).not.toHaveBeenCalled();
@@ -381,12 +389,12 @@ describe("book()", () => {
       .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) //pet
       .mockResolvedValueOnce({ rows: [{ id: 2 }] }) //stylist
       .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) //client
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
-        ]
+          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+        ],
       }) //service config
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: [] })
@@ -398,10 +406,10 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: new Date("2028-03-06 05:00:00.000 -0500")
-      })
+        start_time: new Date("2028-03-06 05:00:00.000 -0500"),
+      }),
     ).rejects.toThrow(
-      "appointment start time is earlier than stylist 2's available window"
+      "appointment start time is earlier than stylist 2's available window",
     );
   });
 
@@ -412,21 +420,23 @@ describe("book()", () => {
       .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) //pet
       .mockResolvedValueOnce({ rows: [{ id: 2 }] }) //stylist
       .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) //client
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
-        ]
+          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+        ],
       }) //service config
       .mockResolvedValueOnce({
-        rows: [{ day_of_week: 4, start_time: "09:00:00", end_time: "17:00:00" }]
+        rows: [
+          { day_of_week: 4, start_time: "09:00:00", end_time: "17:00:00" },
+        ],
       }) //availability
       // .mockResolvedValueOnce({ rows: [{ id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }] }) //timeoff
       .mockResolvedValueOnce({ rows: [] })
       .mockRejectedValueOnce({
         code: "P0001",
-        message: "appointment overlaps stylist time off"
+        message: "appointment overlaps stylist time off",
       })
       .mockResolvedValueOnce(); // ROLLBACK
 
@@ -436,10 +446,10 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: new Date(FUTURE_START).setHours(18, 0, 0)
-      })
+        start_time: new Date(FUTURE_START).setHours(18, 0, 0),
+      }),
     ).rejects.toThrow(
-      "appointment end time is later than stylist 2's available window"
+      "appointment end time is later than stylist 2's available window",
     );
   });
 
@@ -451,19 +461,19 @@ describe("book()", () => {
       .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) //pet
       .mockResolvedValueOnce({ rows: [{ id: 2 }] }) //stylist
       .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) //client
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
-        ]
+          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+        ],
       }) //service config
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: timeOffRows }) //timeoff
       .mockResolvedValueOnce({ rows: [] })
       .mockRejectedValueOnce({
         code: "P0001",
-        message: "appointment overlaps stylist time off"
+        message: "appointment overlaps stylist time off",
       })
       .mockResolvedValueOnce(); // ROLLBACK
 
@@ -473,10 +483,10 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: start
-      })
+        start_time: start,
+      }),
     ).rejects.toThrow(
-      "appointment time overlaps with stylist 2's time off window"
+      "appointment time overlaps with stylist 2's time off window",
     );
   });
 
@@ -487,18 +497,18 @@ describe("book()", () => {
       .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) // pet lock
       .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
       .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }]
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) // client snapshot
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }
-        ]
+          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+        ],
       }) // config
       .mockResolvedValueOnce({
-        rows: availabilityRows
+        rows: availabilityRows,
       })
       .mockResolvedValueOnce({
-        rows: timeOffRows
+        rows: timeOffRows,
       })
       .mockResolvedValueOnce({ rows: [] }) // overlap check
       .mockResolvedValueOnce({ rows: [] }) // insert
@@ -510,8 +520,8 @@ describe("book()", () => {
         pet_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: start
-      })
+        start_time: start,
+      }),
     ).rejects.toThrow("start time and end time must be on the same day");
     expect(mockRelease).toHaveBeenCalled();
   });
@@ -545,17 +555,17 @@ describe("update()", () => {
     status: "booked",
     price_snapshot: 30,
     duration_snapshot: 60,
-    created_at: "2026-03-05 21:30:35.270 -0500"
+    created_at: "2026-03-05 21:30:35.270 -0500",
   };
 
   const mockService = {
     id: 99,
-    name: "test service"
+    name: "test service",
   };
 
   it("Update throws when update is empty", async () => {
     await expect(update(1, {})).rejects.toThrow(
-      "no fields provided for update"
+      "no fields provided for update",
     );
   });
 
@@ -567,8 +577,8 @@ describe("update()", () => {
 
     await expect(
       update(APPOINTMENT_ID, {
-        clientId: 99
-      })
+        clientId: 99,
+      }),
     ).rejects.toThrow("client not found");
   });
 
@@ -580,8 +590,8 @@ describe("update()", () => {
 
     await expect(
       update(APPOINTMENT_ID, {
-        petId: 99
-      })
+        petId: 99,
+      }),
     ).rejects.toThrow("pet not found");
   });
 
@@ -593,8 +603,8 @@ describe("update()", () => {
 
     await expect(
       update(APPOINTMENT_ID, {
-        stylistId: 999
-      })
+        stylistId: 999,
+      }),
     ).rejects.toThrow("stylist not found");
   });
 
@@ -606,8 +616,8 @@ describe("update()", () => {
 
     await expect(
       update(APPOINTMENT_ID, {
-        serviceId: 999
-      })
+        serviceId: 999,
+      }),
     ).rejects.toThrow("service not found");
   });
 
@@ -621,8 +631,8 @@ describe("update()", () => {
     await expect(
       update(APPOINTMENT_ID, {
         serviceId: 999,
-        serviceConfigurationId: 999
-      })
+        serviceConfigurationId: 999,
+      }),
     ).rejects.toThrow("service configuration not found");
   });
 
@@ -633,7 +643,7 @@ describe("update()", () => {
       weight_class_id: 4,
       price: 30,
       duration_minutes: 60 * 24,
-      buffer_minutes: 20
+      buffer_minutes: 20,
     };
     mockQuery
       .mockResolvedValueOnce() // BEGIN
@@ -645,8 +655,8 @@ describe("update()", () => {
     await expect(
       update(APPOINTMENT_ID, {
         serviceId: 999,
-        serviceConfigurationId: 999
-      })
+        serviceConfigurationId: 999,
+      }),
     ).rejects.toThrow("start time and end time must be on the same day");
   });
 
@@ -658,7 +668,7 @@ describe("update()", () => {
       weight_class_id: 4,
       price: 30,
       duration_minutes: 60 * 12,
-      buffer_minutes: 20
+      buffer_minutes: 20,
     };
     mockQuery
       .mockResolvedValueOnce() // BEGIN
@@ -671,10 +681,10 @@ describe("update()", () => {
     await expect(
       update(APPOINTMENT_ID, {
         serviceId: 999,
-        serviceConfigurationId: 999
-      })
+        serviceConfigurationId: 999,
+      }),
     ).rejects.toThrow(
-      `appointment end time is later than stylist ${mockAppointment.stylist_id}'s available window`
+      `appointment end time is later than stylist ${mockAppointment.stylist_id}'s available window`,
     );
   });
 
@@ -685,7 +695,7 @@ describe("update()", () => {
       weight_class_id: 4,
       price: 30,
       duration_minutes: 60 * 6,
-      buffer_minutes: 20
+      buffer_minutes: 20,
     };
 
     const additionalTimeOffRows = [
@@ -694,8 +704,8 @@ describe("update()", () => {
         stylist_id: 2,
         start_datetime: "2026-03-10 13:00:00.000 -0500",
         end_datetime: "2026-03-10 17:00:00.000 -0500",
-        reason: "Emergency"
-      }
+        reason: "Emergency",
+      },
     ];
 
     mockQuery
@@ -710,15 +720,15 @@ describe("update()", () => {
     await expect(
       update(APPOINTMENT_ID, {
         serviceId: 999,
-        serviceConfigurationId: 999
-      })
+        serviceConfigurationId: 999,
+      }),
     ).rejects.toThrow(
-      `appointment time overlaps with stylist ${mockAppointment.stylist_id}'s time off window`
+      `appointment time overlaps with stylist ${mockAppointment.stylist_id}'s time off window`,
     );
   });
 
   it("Update start time - throws when start_time is in the past", async () => {
-     mockQuery
+    mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
       .mockResolvedValueOnce({ rows: [mockService] }) //service
@@ -726,8 +736,8 @@ describe("update()", () => {
       .mockResolvedValueOnce(); // ROLLBACK
     await expect(
       update(APPOINTMENT_ID, {
-        startTime: "2000-01-01T00:00:00.000Z"
-      })
+        startTime: "2000-01-01T00:00:00.000Z",
+      }),
     ).rejects.toThrow("invalid start_time: cannot be in the past");
 
     expect(mockQuery).toHaveBeenCalled(2);
@@ -737,13 +747,14 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
+      .mockResolvedValueOnce({ rows: [mockPet] })
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
-      .mockResolvedValueOnce(); // BEGIN
+      .mockResolvedValueOnce(); // ROLLBACK
 
     await expect(
       update(APPOINTMENT_ID, {
-        startTime: NEAR_MIDNIGHT_START
-      })
+        startTime: NEAR_MIDNIGHT_START,
+      }),
     ).rejects.toThrow("start time and end time must be on the same day");
   });
 
@@ -752,6 +763,7 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
+      .mockResolvedValueOnce({ rows: [mockPet] })
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: [] })
@@ -759,10 +771,10 @@ describe("update()", () => {
 
     await expect(
       update(APPOINTMENT_ID, {
-        startTime: new Date("2028-03-06 05:00:00.000 -0500")
-      })
+        startTime: new Date("2028-03-06 05:00:00.000 -0500"),
+      }),
     ).rejects.toThrow(
-      `appointment start time is earlier than stylist ${mockAppointment.stylist_id}'s available window`
+      `appointment start time is earlier than stylist ${mockAppointment.stylist_id}'s available window`,
     );
   });
 
@@ -771,6 +783,7 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
+      .mockResolvedValueOnce({ rows: [mockPet] })
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: [] })
@@ -778,10 +791,10 @@ describe("update()", () => {
 
     await expect(
       update(APPOINTMENT_ID, {
-        startTime: new Date("2028-03-06 16:50:00.000 -0500")
-      })
+        startTime: new Date("2028-03-06 16:50:00.000 -0500"),
+      }),
     ).rejects.toThrow(
-      `appointment end time is later than stylist ${mockAppointment.stylist_id}'s available window`
+      `appointment end time is later than stylist ${mockAppointment.stylist_id}'s available window`,
     );
   });
 
@@ -789,6 +802,7 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
+      .mockResolvedValueOnce({ rows: [mockPet] })
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: timeOffRows })
@@ -796,10 +810,10 @@ describe("update()", () => {
 
     await expect(
       update(APPOINTMENT_ID, {
-        startTime: TIMEOFF_OVERLAP_START
-      })
+        startTime: TIMEOFF_OVERLAP_START,
+      }),
     ).rejects.toThrow(
-      `appointment time overlaps with stylist ${mockAppointment.stylist_id}'s time off window`
+      `appointment time overlaps with stylist ${mockAppointment.stylist_id}'s time off window`,
     );
   });
 
@@ -820,11 +834,12 @@ describe("update()", () => {
       status: "booked",
       price_snapshot: 30,
       duration_snapshot: 60,
-      created_at: "2026-03-05 21:30:35.270 -0500"
+      created_at: "2026-03-05 21:30:35.270 -0500",
     };
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
+      // .mockResolvedValueOnce({ rows: [mockPet] })
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: timeOffRows })
@@ -832,7 +847,7 @@ describe("update()", () => {
       .mockResolvedValueOnce({ rows: [mockUpdatedAppointment] }) //return updated appointment
       .mockResolvedValueOnce(); // COMMIT
 
-    const result = await update(APPOINTMENT_ID, { startTime: FUTURE_START });
+    const result = await update(APPOINTMENT_ID, { start_time: FUTURE_START });
     expect(result).toEqual(mockUpdatedAppointment);
     expect(mockQuery).toHaveBeenCalled(8);
     expect(mockRelease).toHaveBeenCalled();

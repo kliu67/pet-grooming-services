@@ -9,7 +9,7 @@ const DB_FIELDS = {
     clientId: "client_id",
     petId: "pet_id",
     serviceId: "service_id",
-  }
+  },
 };
 
 function validateId(id, name = "id") {
@@ -71,7 +71,7 @@ async function assertStylistExists(dbClient, stylistId) {
       FROM stylists
       WHERE id = $1
       `,
-    [stylistId]
+    [stylistId],
   );
 
   if (!stylistRes.rows[0]) {
@@ -85,7 +85,7 @@ async function assertServiceExists(dbClient, serviceId) {
   const serviceRes = await dbClient.query(
     `SELECT id, name, base_price, description, uuid, created_at FROM services
         WHERE id = $1`,
-    [serviceId]
+    [serviceId],
   );
 
   if (!serviceRes.rows[0]) {
@@ -97,12 +97,12 @@ async function assertServiceExists(dbClient, serviceId) {
 function assertStylistIsAvailable(availabilityData, stylistId, start, end) {
   // const dayOfWeek = start.getDay();
   const availableTime = availabilityData.find(
-    (a) => a.day_of_week === start.getDay()
+    (a) => a.day_of_week === start.getDay(),
   );
   if (availableTime) {
     //check stylist is available on this day of week
     const availabilityStartMinutes = parseTimeToMinutes(
-      availableTime.start_time
+      availableTime.start_time,
     );
     const startMinutes = parseDateToMinutes(start);
 
@@ -135,7 +135,7 @@ function assertNoTimeOffOverlap(timeOffData, stylistId, start, end) {
     const appointmentEnd = end;
     return areIntervalsOverlapping(
       { start: timeOffStart, end: timeOffEnd },
-      { start: appointmentStart, end: appointmentEnd }
+      { start: appointmentStart, end: appointmentEnd },
     );
   });
 
@@ -150,7 +150,7 @@ async function assertNoAppointmentOverlap(
   stylistId,
   start,
   end,
-  excludeAppointmentId = null
+  excludeAppointmentId = null,
 ) {
   const params = [stylistId, start, end];
   let excludeClause = "";
@@ -170,7 +170,7 @@ async function assertNoAppointmentOverlap(
       ${excludeClause}
     LIMIT 1
     `,
-    params
+    params,
   );
 
   if (overlapRes.rows[0]) {
@@ -185,7 +185,7 @@ async function getClientSnapshot(client, clientId) {
     FROM users
     WHERE id = $1
     `,
-    [clientId]
+    [clientId],
   );
 
   if (!userRes.rows[0]) {
@@ -203,7 +203,7 @@ async function getClient(dbClient, clientId) {
     FROM users
     WHERE id = $1
     `,
-    [clientId]
+    [clientId],
   );
 
   if (!userRes.rows[0]) {
@@ -220,7 +220,7 @@ async function getPet(dbClient, petId) {
     FROM pets
     WHERE id = $1
     `,
-    [petId]
+    [petId],
   );
 
   if (!petRes.rows[0]) {
@@ -237,7 +237,7 @@ async function getStylist(dbClient, stylistId) {
       FROM stylists
       WHERE id = $1
       `,
-    [stylistId]
+    [stylistId],
   );
 
   if (!stylistRes.rows[0]) {
@@ -251,7 +251,7 @@ async function getService(dbClient, serviceId) {
   const serviceRes = await dbClient.query(
     `SELECT id, name, base_price, description, uuid, created_at FROM services
         WHERE id = $1`,
-    [serviceId]
+    [serviceId],
   );
 
   if (!serviceRes.rows[0]) {
@@ -263,13 +263,13 @@ async function getService(dbClient, serviceId) {
 async function getActiveServiceConfiguration(dbClient, serviceConfigurationId) {
   const cfgRes = await dbClient.query(
     `
-    SELECT sc.id, sc.price, sc.duration_minutes, s.name AS service_name, sc.buffer_minutes
+    SELECT sc.id, sc.price, sc.duration_minutes, sc.buffer_minutes, s.name AS service_name, sc.buffer_minutes
     FROM service_configurations sc
     JOIN services s ON s.id = sc.service_id
     WHERE sc.id = $1
       AND sc.is_active = TRUE
     `,
-    [serviceConfigurationId]
+    [serviceConfigurationId],
   );
 
   if (!cfgRes.rows[0]) {
@@ -278,27 +278,34 @@ async function getActiveServiceConfiguration(dbClient, serviceConfigurationId) {
   return cfgRes.rows[0];
 }
 
-// async function getActiveServiceConfigurationByFKs(
-//   client,
-//   petId,
-//   breedId,
-//   serviceId
-// ) {
-//   const cfgRes = await client.query(
-//     `
-//      SELECT sc.id, sc.price, sc.duration_minutes, s.name AS service_name
-//     FROM service_configurations sc
-//     JOIN services s ON s.id = sc.service_id
-//     WHERE sc.service_id = $1, sc.pet_id =
-//       AND sc.is_active = TRUE
-//     `
-//   );
-// }
+async function getActiveServiceConfigurationByFKs(
+  client,
+  service_id,
+  breed_id,
+  weight_class_id,
+) {
+  const cfgRes = await client.query(
+    `
+     SELECT sc.id, sc.price, sc.duration_minutes, sc.buffer_minutes, s.name AS service_name
+    FROM service_configurations sc
+    JOIN services s ON s.id = sc.service_id
+    WHERE sc.service_id = $1 AND sc.breed_id = $2 AND sc.weight_class_id = $3
+      AND sc.is_active = TRUE
+    `,
+    [service_id, breed_id, weight_class_id],
+  );
+  if (!cfgRes.rows[0]) {
+    throw new Error(
+      "service configuration not found with petId breedId and serviceId",
+    );
+  }
+  return cfgRes.rows[0];
+}
 
 async function getAvailability(dbClient, stylistId) {
   const availabilityRes = await dbClient.query(
     `SELECT day_of_week, start_time, end_time FROM stylist_availability WHERE stylist_id = $1`,
-    [stylistId]
+    [stylistId],
   );
 
   if (!availabilityRes.rows[0]) {
@@ -310,7 +317,7 @@ async function getAvailability(dbClient, stylistId) {
 async function getTimeOff(dbClient, stylistId) {
   const timeOffRes = await dbClient.query(
     `SELECT start_datetime, end_datetime FROM stylist_time_offs WHERE stylist_id = $1 AND end_datetime > NOW()`,
-    [stylistId]
+    [stylistId],
   );
   return timeOffRes.rows ?? [];
 }
@@ -368,7 +375,7 @@ export async function findById(id) {
 
   const { rows } = await pool.query(
     `SELECT * FROM appointments WHERE id = $1`,
-    [numericId]
+    [numericId],
   );
 
   return rows[0] ?? null;
@@ -379,7 +386,7 @@ export async function findByUuid(uuid) {
 
   const { rows } = await pool.query(
     `SELECT * FROM appointments WHERE uuid = $1`,
-    [validUuid]
+    [validUuid],
   );
 
   return rows[0] ?? null;
@@ -393,7 +400,7 @@ export async function findByClientId(clientId) {
     WHERE client_id = $1
     ORDER BY start_time ASC
   `,
-    [sanitizedId]
+    [sanitizedId],
   );
   return rows ?? [];
 }
@@ -406,7 +413,7 @@ export async function findByPetId(petId) {
     WHERE pet_id = $1
     ORDER BY start_time ASC
   `,
-    [sanitizedId]
+    [sanitizedId],
   );
   return rows ?? [];
 }
@@ -419,7 +426,7 @@ export async function findByStylistId(stylistId) {
     WHERE pet_id = $1
     ORDER BY stylist_id ASC
   `,
-    [sanitizedId]
+    [sanitizedId],
   );
   return rows ?? [];
 }
@@ -432,7 +439,7 @@ export async function findByServiceId(serviceId) {
     WHERE service_id = $1
     ORDER BY start_time ASC
   `,
-    [sanitizedId]
+    [sanitizedId],
   );
   return rows ?? [];
 }
@@ -444,14 +451,14 @@ export async function book({
   service_configuration_id: serviceConfigurationId,
   stylist_id: stylistId,
   start_time: startTime,
-  description = null
+  description = null,
 }) {
   clientId = validateId(clientId, "client_id");
   petId = validateId(petId, "pet_id");
   serviceId = validateId(serviceId, "service_id");
   serviceConfigurationId = validateId(
     serviceConfigurationId,
-    "service_configuration_id"
+    "service_configuration_id",
   );
   stylistId = validateId(stylistId, "stylist_id");
   const start = validateTime(startTime);
@@ -478,14 +485,16 @@ export async function book({
     //service configuration must exist
     const config = await getActiveServiceConfiguration(
       dbClient,
-      serviceConfigurationId
+      serviceConfigurationId,
     );
     const end = new Date(
-      start.getTime() + Number(config.duration_minutes) * 60000
+      start.getTime() + Number(config.duration_minutes) * 60000,
     );
 
     const effectiveEnd = new Date(
-      start.getTime() + Number(config.duration_minutes) * 60000 + Number(config.buffer_minutes) * 60000
+      start.getTime() +
+        Number(config.duration_minutes) * 60000 +
+        Number(config.buffer_minutes) * 60000,
     );
 
     //appointment start and end must be on the same day
@@ -502,7 +511,7 @@ export async function book({
     //appointment cannot overlap with another appointment
     await assertNoAppointmentOverlap(dbClient, stylistId, start, end);
 
-    const status = 'booked';
+    const status = "booked";
 
     const insertRes = await dbClient.query(
       `
@@ -523,8 +532,8 @@ export async function book({
         config.price,
         config.duration_minutes,
         description,
-        status
-      ]
+        status,
+      ],
     );
 
     await dbClient.query("COMMIT");
@@ -547,7 +556,7 @@ export async function cancel(id) {
     WHERE id = $1
     RETURNING *
     `,
-    [numericId]
+    [numericId],
   );
 
   if (!rows[0]) {
@@ -577,7 +586,7 @@ export async function update(id, updates) {
     await dbClient.query("BEGIN");
     appointment = await dbClient.query(
       "SELECT * FROM appointments WHERE id = $1",
-      [appId]
+      [appId],
     );
     if (!appointment) throw "appointment not found";
     clientId = appointment.client_id;
@@ -622,7 +631,7 @@ export async function update(id, updates) {
       await assertServiceExists(dbClient, serviceId);
       const newConfig = await getActiveServiceConfiguration(
         dbClient,
-        serviceConfigurationId
+        serviceConfigurationId,
       );
 
       if (newConfig.duration_minutes !== appointment.duration_snapshot) {
@@ -631,7 +640,7 @@ export async function update(id, updates) {
 
         //check if new appointment end time is valid;
         const end = new Date(
-          start.getTime() + Number(newConfig.duration_minutes) * 60000
+          start.getTime() + Number(newConfig.duration_minutes) * 60000,
         );
         assertStartEndOnSameDay(start, end);
 
@@ -655,17 +664,32 @@ export async function update(id, updates) {
       const start = validateTime(updates.startTime);
       assertStartTimeNotPast(start);
 
-      fields.push(`service_id = $${index++}`);
+      fields.push(`start_time = $${index++}`);
       values.push(start);
       const stylistId = appointment.rows[0].stylist_id;
-      const config = await getActiveServiceConfiguration(
-        dbClient,
-        serviceConfigurationId
-      );
 
-      const end = new Date(
-        start.getTime() + Number(config.duration_minutes) * 60000
+      const { pet_id, service_id } = appointment?.rows[0];
+      const pet = await getPet(dbClient, pet_id);
+      const { weight_class_id, breed: breed_id } = pet;
+
+      const config = await getActiveServiceConfigurationByFKs(
+        dbClient,
+        service_id,
+        breed_id,
+        weight_class_id,
       );
+      const end = new Date(
+        start.getTime() + Number(config.duration_minutes) * 60000,
+      );
+      fields.push(`end_time = $${index++}`);
+      values.push(end);
+
+      const effectiveEnd = new Date(
+        start.getTime() +
+          Number(config.duration_minutes + config.buffer_minutes) * 60000,
+      );
+      fields.push(`effective_end_time = $${index++}`);
+      values.push(effectiveEnd);
       //appointment start and end must be on the same day
       assertStartEndOnSameDay(start, end);
       //stylist must have availability
@@ -685,6 +709,7 @@ export async function update(id, updates) {
       //TO DO: mutate status
     }
 
+    values.push(appId);
     const updateRes = await dbClient.query(
       `
       UPDATE appointments
@@ -692,7 +717,7 @@ export async function update(id, updates) {
       WHERE id = $${index}
       RETURNING *
       `,
-      values
+      values,
     );
 
     await dbClient.query("COMMIT");

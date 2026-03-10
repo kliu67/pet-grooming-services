@@ -77,7 +77,7 @@ export async function updateAppointment(req, res) {
     const { id } = req.params;
     const { startTime } = req.body;
 
-    const updated = await Appointment.update(id, startTime);
+    const updated = await Appointment.update(id, req.body);
     return res.status(200).json(updated);
   } catch (err) {
     if (err.message === "appointment not found") {
