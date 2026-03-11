@@ -713,22 +713,19 @@ export async function update(id, updates) {
     }
 
     if (shouldUseNewConfig) {
-      const currConfig = await getConfigByServiceAndPet(
-        dbClient,
-        appointment.service_id,
-        appointment.pet_id,
-      );
+
+      const {
+        price: currPrice,
+        duration_minutes: currDuration,
+        buffer_minutes: currBuffer,
+      } = config;
       const newConfig = await getConfigByServiceAndPet(
         dbClient,
         serviceId,
         petId,
       );
       config = newConfig;
-      const {
-        price: currPrice,
-        duration_minutes: currDuration,
-        buffer_minutes: currBuffer,
-      } = currConfig;
+
       const {
         price: newPrice,
         duration_minutes: newDuration,

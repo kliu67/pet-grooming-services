@@ -109,7 +109,7 @@ const mockPet = {
   id: 1,
   name: "Lou",
   breed: 50,
-  owner: 100,
+  owner: 1,
   weight_class_id: 1,
 };
 
@@ -121,6 +121,15 @@ const mockServiceConfiguration = {
   duration_minutes: 60,
   buffer_minutes: 20,
 };
+
+function mockCurrentAppointmentConfigLookup({
+  pet = mockPet,
+  config = mockServiceConfiguration,
+} = {}) {
+  mockQuery
+    .mockResolvedValueOnce({ rows: [pet] })
+    .mockResolvedValueOnce({ rows: [config] });
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -221,9 +230,16 @@ describe("book()", () => {
       .mockResolvedValueOnce({
         rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) // client snapshot
+      .mockResolvedValueOnce({ rows: [{ id: 1, name: "Bath" }] }) // service exists
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+          {
+            id: 10,
+            price: 50,
+            duration_minutes: 60,
+            buffer_minutes: 20,
+            service_name: "Bath",
+          },
         ],
       }) // config
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
@@ -235,6 +251,7 @@ describe("book()", () => {
     const result = await book({
       client_id: 1,
       pet_id: 1,
+      service_id: 1,
       service_configuration_id: 10,
       stylist_id: 2,
       start_time: FUTURE_START,
@@ -252,9 +269,16 @@ describe("book()", () => {
       .mockResolvedValueOnce({
         rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       })
+      .mockResolvedValueOnce({ rows: [{ id: 1, name: "Bath" }] })
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+          {
+            id: 10,
+            price: 50,
+            duration_minutes: 60,
+            buffer_minutes: 20,
+            service_name: "Bath",
+          },
         ],
       })
       .mockResolvedValueOnce({
@@ -271,6 +295,7 @@ describe("book()", () => {
       book({
         client_id: 1,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: FUTURE_START,
@@ -287,6 +312,7 @@ describe("book()", () => {
       book({
         client_id: 1,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: FUTURE_START,
@@ -303,6 +329,7 @@ describe("book()", () => {
       book({
         client_id: 2,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: FUTURE_START,
@@ -320,6 +347,7 @@ describe("book()", () => {
       book({
         client_id: 1,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: FUTURE_START,
@@ -338,6 +366,7 @@ describe("book()", () => {
       book({
         client_id: 1,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: FUTURE_START,
@@ -353,6 +382,7 @@ describe("book()", () => {
       .mockResolvedValueOnce({
         rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) // client snapshot
+      .mockResolvedValueOnce({ rows: [{ id: 1, name: "Bath" }] }) // service exists
       .mockResolvedValueOnce({
         rows: [],
       }); // config
@@ -361,6 +391,7 @@ describe("book()", () => {
       book({
         client_id: 1,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: FUTURE_START,
@@ -373,11 +404,12 @@ describe("book()", () => {
       book({
         client_id: 1,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: "2000-01-01T00:00:00.000Z",
       }),
-    ).rejects.toThrow("invalid start_time: cannot be in the past");
+    ).rejects.toThrow(/cannot be in the past/);
 
     expect(mockQuery).not.toHaveBeenCalled();
   });
@@ -391,9 +423,16 @@ describe("book()", () => {
       .mockResolvedValueOnce({
         rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) //client
+      .mockResolvedValueOnce({ rows: [{ id: 1, name: "Bath" }] }) //service
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+          {
+            id: 10,
+            price: 50,
+            duration_minutes: 60,
+            buffer_minutes: 20,
+            service_name: "Bath",
+          },
         ],
       }) //service config
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
@@ -404,6 +443,7 @@ describe("book()", () => {
       book({
         client_id: 1,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: new Date("2028-03-06 05:00:00.000 -0500"),
@@ -422,9 +462,16 @@ describe("book()", () => {
       .mockResolvedValueOnce({
         rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) //client
+      .mockResolvedValueOnce({ rows: [{ id: 1, name: "Bath" }] }) //service
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+          {
+            id: 10,
+            price: 50,
+            duration_minutes: 60,
+            buffer_minutes: 20,
+            service_name: "Bath",
+          },
         ],
       }) //service config
       .mockResolvedValueOnce({
@@ -444,6 +491,7 @@ describe("book()", () => {
       book({
         client_id: 1,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: new Date(FUTURE_START).setHours(18, 0, 0),
@@ -463,9 +511,16 @@ describe("book()", () => {
       .mockResolvedValueOnce({
         rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) //client
+      .mockResolvedValueOnce({ rows: [{ id: 1, name: "Bath" }] }) //service
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+          {
+            id: 10,
+            price: 50,
+            duration_minutes: 60,
+            buffer_minutes: 20,
+            service_name: "Bath",
+          },
         ],
       }) //service config
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
@@ -481,6 +536,7 @@ describe("book()", () => {
       book({
         client_id: 1,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: start,
@@ -499,9 +555,16 @@ describe("book()", () => {
       .mockResolvedValueOnce({
         rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
       }) // client snapshot
+      .mockResolvedValueOnce({ rows: [{ id: 1, name: "Bath" }] }) // service exists
       .mockResolvedValueOnce({
         rows: [
-          { id: 10, price: 50, duration_minutes: 60, service_name: "Bath" },
+          {
+            id: 10,
+            price: 50,
+            duration_minutes: 60,
+            buffer_minutes: 20,
+            service_name: "Bath",
+          },
         ],
       }) // config
       .mockResolvedValueOnce({
@@ -518,6 +581,7 @@ describe("book()", () => {
       book({
         client_id: 1,
         pet_id: 1,
+        service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
         start_time: start,
@@ -549,9 +613,9 @@ describe("update()", () => {
     service_id: 35,
     stylist_id: 2,
     description: "test appointment",
-    start_time: "2026-03-10 09:30:00.000 -0400",
-    end_time: "2026-03-10 10:30:00.000 -0400",
-    effective_end_time: "2026-03-10 10:50:00.000 -0400",
+    start_time: new Date("2028-03-10T09:30:00.000-05:00"),
+    end_time: new Date("2028-03-10T10:30:00.000-05:00"),
+    effective_end_time: new Date("2028-03-10T10:50:00.000-05:00"),
     status: "booked",
     price_snapshot: 30,
     duration_snapshot: 60,
@@ -573,13 +637,15 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
-      .mockResolvedValueOnce({ rows: [] }); //client not exist
+      .mockResolvedValueOnce({ rows: [mockPet] }) // current pet lookup
+      .mockResolvedValueOnce({ rows: [mockServiceConfiguration] }) // current config
+      .mockResolvedValueOnce({ rows: [mockPet] }); // owner check
 
     await expect(
       update(APPOINTMENT_ID, {
         clientId: 99,
       }),
-    ).rejects.toThrow("client not found");
+    ).rejects.toThrow("pet does not belong to client");
   });
 
   it("Update pet - throws when pet is not found", async () => {
@@ -599,6 +665,8 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
+      .mockResolvedValueOnce({ rows: [mockPet] })
+      .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce({ rows: [] }); //stylists
 
     await expect(
@@ -612,6 +680,8 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
+      .mockResolvedValueOnce({ rows: [mockPet] })
+      .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce({ rows: [] }); //services
 
     await expect(
@@ -625,19 +695,21 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
+      .mockResolvedValueOnce({ rows: [mockPet] })
+      .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce({ rows: [{ id: 999, name: "test service" }] }) //service
+      .mockResolvedValueOnce({ rows: [mockPet] })
       .mockResolvedValueOnce({ rows: [] }); //service configuration
 
     await expect(
       update(APPOINTMENT_ID, {
         serviceId: 999,
-        serviceConfigurationId: 999,
       }),
     ).rejects.toThrow("service configuration not found");
   });
 
   it("Update service configuration - throws when appointment is over two days", async () => {
-    const mockServiceConfiguration = {
+    const mockLongServiceConfiguration = {
       breed_id: 100,
       service_id: 99,
       weight_class_id: 4,
@@ -648,21 +720,23 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
+      .mockResolvedValueOnce({ rows: [mockPet] })
+      .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce({ rows: [mockService] }) //service
-      .mockResolvedValueOnce({ rows: [mockServiceConfiguration] }) //service configuration
+      .mockResolvedValueOnce({ rows: [mockPet] })
+      .mockResolvedValueOnce({ rows: [mockLongServiceConfiguration] }) //service configuration
       .mockResolvedValueOnce(); // BEGIN
 
     await expect(
       update(APPOINTMENT_ID, {
         serviceId: 999,
-        serviceConfigurationId: 999,
       }),
     ).rejects.toThrow("start time and end time must be on the same day");
   });
 
   it("Update service configuration - throws when new service duration exceeds stylist's available time", async () => {
     /*****appointment starts earlier than stylist's available window*****/
-    const mockServiceConfiguration = {
+    const mockLongServiceConfiguration = {
       breed_id: 100,
       service_id: 99,
       weight_class_id: 4,
@@ -673,15 +747,17 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
-      .mockResolvedValueOnce({ rows: [mockService] }) //service
+      .mockResolvedValueOnce({ rows: [mockPet] })
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
+      .mockResolvedValueOnce({ rows: [mockService] }) //service
+      .mockResolvedValueOnce({ rows: [mockPet] })
+      .mockResolvedValueOnce({ rows: [mockLongServiceConfiguration] })
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce(); // ROLLBACK
 
     await expect(
       update(APPOINTMENT_ID, {
         serviceId: 999,
-        serviceConfigurationId: 999,
       }),
     ).rejects.toThrow(
       `appointment end time is later than stylist ${mockAppointment.stylist_id}'s available window`,
@@ -689,7 +765,7 @@ describe("update()", () => {
   });
 
   it(`Update service configuration - throws when appointment time overlaps with stylist's time off`, async () => {
-    const mockServiceConfiguration = {
+    const mockLongServiceConfiguration = {
       breed_id: 100,
       service_id: 99,
       weight_class_id: 4,
@@ -702,8 +778,8 @@ describe("update()", () => {
       ...timeOffRows,
       {
         stylist_id: 2,
-        start_datetime: "2026-03-10 13:00:00.000 -0500",
-        end_datetime: "2026-03-10 17:00:00.000 -0500",
+        start_datetime: "2028-03-10 13:00:00.000 -0500",
+        end_datetime: "2028-03-10 17:00:00.000 -0500",
         reason: "Emergency",
       },
     ];
@@ -711,8 +787,11 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
-      .mockResolvedValueOnce({ rows: [mockService] }) //service
+      .mockResolvedValueOnce({ rows: [mockPet] })
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
+      .mockResolvedValueOnce({ rows: [mockService] }) //service
+      .mockResolvedValueOnce({ rows: [mockPet] })
+      .mockResolvedValueOnce({ rows: [mockLongServiceConfiguration] })
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: additionalTimeOffRows })
       .mockResolvedValueOnce(); // ROLLBACK
@@ -720,7 +799,6 @@ describe("update()", () => {
     await expect(
       update(APPOINTMENT_ID, {
         serviceId: 999,
-        serviceConfigurationId: 999,
       }),
     ).rejects.toThrow(
       `appointment time overlaps with stylist ${mockAppointment.stylist_id}'s time off window`,
@@ -731,16 +809,16 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
-      .mockResolvedValueOnce({ rows: [mockService] }) //service
+      .mockResolvedValueOnce({ rows: [mockPet] }) //pet
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce(); // ROLLBACK
     await expect(
       update(APPOINTMENT_ID, {
         startTime: "2000-01-01T00:00:00.000Z",
       }),
-    ).rejects.toThrow("invalid start_time: cannot be in the past");
+    ).rejects.toThrow(/cannot be in the past/);
 
-    expect(mockQuery).toHaveBeenCalled(2);
+    expect(mockQuery).toHaveBeenCalled(5);
   });
 
   it("Update start time - throws when appointment is over two days", async () => {
@@ -819,8 +897,16 @@ describe("update()", () => {
 
   it("Update successfully", async () => {
     const futureStart = "2036-10-06T15:00:00.000Z";
-    const futureEnd = "2036-10-06T16:00:00.000Z";
-    const futureEffectiveEnd = "2036-10-06T16:20:00.000Z";
+    const futureEnd = new Date(
+      new Date(futureStart).getTime() +
+        mockServiceConfiguration.duration_minutes * 60000,
+    ).toISOString();
+    const futureEffectiveEnd = new Date(
+      new Date(futureStart).getTime() +
+        (mockServiceConfiguration.duration_minutes +
+          mockServiceConfiguration.buffer_minutes) *
+          60000,
+    ).toISOString();
     const mockUpdatedAppointment = {
       id: 2,
       client_id: 2,
@@ -839,7 +925,7 @@ describe("update()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
-      // .mockResolvedValueOnce({ rows: [mockPet] })
+      .mockResolvedValueOnce({ rows: [mockPet] })
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: timeOffRows })
@@ -847,7 +933,7 @@ describe("update()", () => {
       .mockResolvedValueOnce({ rows: [mockUpdatedAppointment] }) //return updated appointment
       .mockResolvedValueOnce(); // COMMIT
 
-    const result = await update(APPOINTMENT_ID, { start_time: FUTURE_START });
+    const result = await update(APPOINTMENT_ID, { start_time: futureStart });
     expect(result).toEqual(mockUpdatedAppointment);
     expect(mockQuery).toHaveBeenCalled(8);
     expect(mockRelease).toHaveBeenCalled();
