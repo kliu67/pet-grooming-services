@@ -1,16 +1,15 @@
 import { pool } from "../db.js";
 import { parseTimeToMinutes, parseDateToMinutes } from "../utils/timeRanges.js";
-import { areIntervalsOverlapping, add } from "date-fns";
-import { computeBuffer } from "../utils/helpers.js";
+import { areIntervalsOverlapping } from "date-fns";
 import { validateDescription } from "../validators/validator.js";
 
-const DB_FIELDS = {
-  appointments: {
-    clientId: "client_id",
-    petId: "pet_id",
-    serviceId: "service_id",
-  },
-};
+// const DB_FIELDS = {
+//   appointments: {
+//     clientId: "client_id",
+//     petId: "pet_id",
+//     serviceId: "service_id",
+//   },
+// };
 
 function validateId(id, name = "id") {
   const n = Number(id);
@@ -44,15 +43,29 @@ function validateTime(startTime) {
   return t;
 }
 
-function assertStartTimeNotPast(start) {
-  if (start.getTime() < Date.now()) {
-    throw new Error("invalid start_time: cannot be in the past");
+function assertDateTimeNotInThePast(dateTime) {
+  if (dateTime.getTime() < Date.now()) {
+    throw new Error(`invalid date time: ${dateTime} - cannot be in the past`);
+  }
+  return true;
+}
+
+function assertEndTimeIsAfterStart(start, end) {
+  //equal date time is okay
+  if (start.getTime() > end.getTime()) {
+    throw new Error(
+      `invalid date time: end time-$${end} cannot be before start time-${start}`,
+    );
   }
 }
 
 function assertStartEndOnSameDay(start, end) {
-  if (start.getDate() !== end.getDate()) {
-    throw "start time and end time must be on the same day";
+  if (
+    start.getDate() !== end.getDate() ||
+    start.getMonth() !== end.getMonth() ||
+    start.getFullYear() !== end.getFullYear()
+  ) {
+    throw new Error("start time and end time must be on the same day");
   }
   return true;
 }
@@ -108,13 +121,13 @@ function assertStylistIsAvailable(availabilityData, stylistId, start, end) {
 
     if (startMinutes < availabilityStartMinutes) {
       //check appointment time is equal to or later than the availabile start time
-      throw `appointment start time is earlier than stylist ${stylistId}'s available window`;
+      throw new Error(`appointment start time is earlier than stylist ${stylistId}'s available window`);
     }
 
     const availabilityEndMinutes = parseTimeToMinutes(availableTime.end_time);
     const endMinutes = parseDateToMinutes(end);
     if (endMinutes > availabilityEndMinutes) {
-      throw `appointment end time is later than stylist ${stylistId}'s available window`;
+      throw new Error(`appointment end time is later than stylist ${stylistId}'s available window`);
     }
     return true;
   }
@@ -140,7 +153,7 @@ function assertNoTimeOffOverlap(timeOffData, stylistId, start, end) {
   });
 
   if (overlaps[0]) {
-    throw `appointment time overlaps with stylist ${stylistId}'s time off window`;
+    throw new Error(`appointment time overlaps with stylist ${stylistId}'s time off window`);
   }
   return true;
 }
@@ -178,6 +191,43 @@ async function assertNoAppointmentOverlap(
   }
 }
 
+async function assertNewTimeWindowIsValid(
+  dbClient,
+  appointmentId,
+  stylistId,
+  start,
+  end,
+  effectiveEnd,
+) {
+  //start time cannot be in the past
+  assertDateTimeNotInThePast(start);
+
+  //start time cannot be later than end time
+  assertEndTimeIsAfterStart(start, end);
+
+  //start and end must be on the same day
+  assertStartEndOnSameDay(start, end);
+
+  //stylist must have availability
+  const availabilityData = await getAvailability(dbClient, stylistId);
+  assertStylistIsAvailable(availabilityData, stylistId, start, end);
+
+  //check for time off overlap if time off data exists
+  const timeOffsData = await getTimeOff(dbClient, stylistId);
+  if (timeOffsData) {
+    assertNoTimeOffOverlap(timeOffsData, stylistId, start, end);
+  }
+  //appointment cannot overlap with another appointment, itself excluded
+  await assertNoAppointmentOverlap(
+    dbClient,
+    stylistId,
+    start,
+    effectiveEnd,
+    appointmentId,
+  );
+
+  return true;
+}
 async function getClientSnapshot(client, clientId) {
   const userRes = await client.query(
     `
@@ -263,7 +313,7 @@ async function getService(dbClient, serviceId) {
 async function getActiveServiceConfiguration(dbClient, serviceConfigurationId) {
   const cfgRes = await dbClient.query(
     `
-    SELECT sc.id, sc.price, sc.duration_minutes, sc.buffer_minutes, s.name AS service_name, sc.buffer_minutes
+    SELECT sc.id, sc.price, sc.duration_minutes, sc.buffer_minutes, s.name AS service_name
     FROM service_configurations sc
     JOIN services s ON s.id = sc.service_id
     WHERE sc.id = $1
@@ -279,12 +329,12 @@ async function getActiveServiceConfiguration(dbClient, serviceConfigurationId) {
 }
 
 async function getActiveServiceConfigurationByFKs(
-  client,
+  dbClient,
   service_id,
   breed_id,
   weight_class_id,
 ) {
-  const cfgRes = await client.query(
+  const cfgRes = await dbClient.query(
     `
      SELECT sc.id, sc.price, sc.duration_minutes, sc.buffer_minutes, s.name AS service_name
     FROM service_configurations sc
@@ -302,6 +352,17 @@ async function getActiveServiceConfigurationByFKs(
   return cfgRes.rows[0];
 }
 
+async function getConfigByServiceAndPet(dbClient, service_id, pet_id) {
+  const pet = await getPet(dbClient, pet_id);
+  const { breed: breed_id, weight_class_id } = pet;
+  return await getActiveServiceConfigurationByFKs(
+    dbClient,
+    service_id,
+    breed_id,
+    weight_class_id,
+  );
+}
+
 async function getAvailability(dbClient, stylistId) {
   const availabilityRes = await dbClient.query(
     `SELECT day_of_week, start_time, end_time FROM stylist_availability WHERE stylist_id = $1`,
@@ -316,7 +377,7 @@ async function getAvailability(dbClient, stylistId) {
 
 async function getTimeOff(dbClient, stylistId) {
   const timeOffRes = await dbClient.query(
-    `SELECT start_datetime, end_datetime FROM stylist_time_offs WHERE stylist_id = $1 AND end_datetime > NOW()`,
+    `SELECT stylist_id, start_datetime, end_datetime FROM stylist_time_offs WHERE stylist_id = $1 AND end_datetime > NOW()`,
     [stylistId],
   );
   return timeOffRes.rows ?? [];
@@ -423,8 +484,8 @@ export async function findByStylistId(stylistId) {
   const { rows } = await pool.query(
     `
     SELECT * FROM appointments
-    WHERE pet_id = $1
-    ORDER BY stylist_id ASC
+    WHERE stylist_id = $1
+    ORDER BY start_time ASC
   `,
     [sanitizedId],
   );
@@ -462,7 +523,7 @@ export async function book({
   );
   stylistId = validateId(stylistId, "stylist_id");
   const start = validateTime(startTime);
-  assertStartTimeNotPast(start);
+  assertDateTimeNotInThePast(start);
 
   const dbClient = await pool.connect();
   validateDescription(description);
@@ -493,8 +554,8 @@ export async function book({
 
     const effectiveEnd = new Date(
       start.getTime() +
-        Number(config.duration_minutes) * 60000 +
-        Number(config.buffer_minutes) * 60000,
+      Number(config.duration_minutes) * 60000 +
+      Number(config.buffer_minutes) * 60000,
     );
 
     //appointment start and end must be on the same day
@@ -509,7 +570,7 @@ export async function book({
     assertNoTimeOffOverlap(timeOffsData, stylistId, start, end);
 
     //appointment cannot overlap with another appointment
-    await assertNoAppointmentOverlap(dbClient, stylistId, start, end);
+    await assertNoAppointmentOverlap(dbClient, stylistId, start, effectiveEnd);
 
     const status = "booked";
 
@@ -575,11 +636,11 @@ export async function update(id, updates) {
 
   const fields = [];
   const values = [];
-  const { serviceConfigurationId } = updates;
   let index = 1;
-  let client, pet, stylist, service;
-  let clientId;
   let appointment;
+  let shouldUseNewConfig = false;
+  let shouldValidateTimeWindow = false;
+  let shouldValidatePetClientRel = false;
   const dbClient = await pool.connect();
 
   try {
@@ -588,140 +649,170 @@ export async function update(id, updates) {
       "SELECT * FROM appointments WHERE id = $1",
       [appId],
     );
-    if (!appointment) throw "appointment not found";
-    clientId = appointment.client_id;
+    appointment = appointment.rows[0];
 
-    //update client
-    if ("clientId" in updates) {
-      const clientId = validateId(updates.clientId);
+    if (!appointment) throw new Error("appointment not found");
+
+    let {
+      id: appointmentId,
+      client_id: clientId,
+      service_id: serviceId,
+      pet_id: petId,
+      stylist_id: stylistId,
+      start_time: start,
+      end_time: end,
+      effective_end_time: effectiveEnd,
+    } = appointment;
+    let config = await getConfigByServiceAndPet(dbClient, serviceId, petId);
+
+    //validate clientId and push it into query
+    if ("clientId" in updates || "client_id" in updates) {
+      clientId = validateId(updates.clientId ?? updates.client_id);
       fields.push(`client_id = $${index++}`);
       values.push(clientId);
-
-      client = await getClient(dbClient, clientId);
+      shouldValidatePetClientRel = true;
     }
 
-    //update pet
-    if ("petId" in updates) {
-      const petId = validateId(updates.petId);
+    //validate pet and push it into query
+    if ("petId" in updates || "pet_id" in updates) {
+      //validate petId, check pet exists and have owner-pet relationship with clientId
+      petId = validateId(updates.petId ?? updates.pet_id);
       fields.push(`pet_id = $${index++}`);
       values.push(petId);
+      shouldUseNewConfig = true;
+      shouldValidatePetClientRel = true;
 
-      pet = await getPet(dbClient, petId);
-      if (pet.owner !== clientId) {
-        throw new Error("pet does not belong to client");
-      }
+      //model: grab a new config based on new pet and check if end time has conflict with stylist availability, timeoff, and another appointment
       //check if there is pet overlap. DB should be able to handle
+      //TODO: check if pet is service-able by checking pet breed.
+    }
+
+    if (shouldValidatePetClientRel) {
+      await assertPetHasOwner(dbClient, petId, clientId);
     }
 
     //update stylist
-    if ("stylistId" in updates) {
-      const stylistId = validateId(updates.stylistId);
+    if ("stylistId" in updates || "stylist_id" in updates) {
+      //validate stylistId and check if stylist exists.
+      stylistId = validateId(updates.stylistId ?? updates.stylist_id);
+      await assertStylistExists(dbClient, stylistId);
       fields.push(`stylist_id = $${index++}`);
       values.push(stylistId);
-
-      await assertStylistExists(dbClient, stylistId);
+      //check timetable conflict
+      shouldValidateTimeWindow = true;
     }
 
     //update service
-    if ("serviceId" in updates) {
-      const serviceId = validateId(updates.serviceId);
+    if ("serviceId" in updates || "service_id" in updates) {
+      //check service id is valid and service exists
+      serviceId = validateId(updates.serviceId ?? updates.service_id);
+      await assertServiceExists(dbClient, serviceId);
       fields.push(`service_id = $${index++}`);
       values.push(serviceId);
+      shouldUseNewConfig = true;
+    }
 
-      await assertServiceExists(dbClient, serviceId);
-      const newConfig = await getActiveServiceConfiguration(
+    if (shouldUseNewConfig) {
+      const currConfig = await getConfigByServiceAndPet(
         dbClient,
-        serviceConfigurationId,
+        appointment.service_id,
+        appointment.pet_id,
       );
+      const newConfig = await getConfigByServiceAndPet(
+        dbClient,
+        serviceId,
+        petId,
+      );
+      config = newConfig;
+      const {
+        price: currPrice,
+        duration_minutes: currDuration,
+        buffer_minutes: currBuffer,
+      } = currConfig;
+      const {
+        price: newPrice,
+        duration_minutes: newDuration,
+        buffer_minutes: newBuffer,
+      } = newConfig;
 
-      if (newConfig.duration_minutes !== appointment.duration_snapshot) {
-        const stylistId = appointment.rows[0].stylist_id;
-        const start = validateTime(appointment.rows[0].start_time);
-
-        //check if new appointment end time is valid;
-        const end = new Date(
+      //need to compare effective end time and price
+      if (currDuration + currBuffer !== newDuration + newBuffer) {
+        end = new Date(
           start.getTime() + Number(newConfig.duration_minutes) * 60000,
         );
-        assertStartEndOnSameDay(start, end);
-
-        //stylist must have availability
-        const availabilityData = await getAvailability(dbClient, stylistId);
-
-        assertStylistIsAvailable(availabilityData, stylistId, start, end);
-
-        const timeOffsData = await getTimeOff(dbClient, stylistId);
-
-        //check for time off overlap if time off data exists
-
-        assertNoTimeOffOverlap(timeOffsData, stylistId, start, end);
-
-        //appointment cannot overlap with another appointment
-        await assertNoAppointmentOverlap(client, stylistId, start, end);
+        effectiveEnd = new Date(
+          start.getTime() +
+          Number(newConfig.duration_minutes + newConfig.buffer_minutes) * 60000,
+        );
+        shouldValidateTimeWindow = true;
       }
+
+      if (newPrice !== currPrice) {
+        fields.push(`price_snapshot = $${index++}`);
+        values.push(newPrice);
+      }
+
+      if (newDuration !== currDuration) {
+        fields.push(`duration_snapshot = $${index++}`);
+        values.push(newDuration);
+      }
+
+      //push newEnd and newEffectiveEnd
     }
 
-    if ("startTime" in updates) {
-      const start = validateTime(updates.startTime);
-      assertStartTimeNotPast(start);
+    if ("startTime" in updates || "start_time" in updates) {
+      start = validateTime(updates.startTime ?? updates.start_time);
+      end = new Date(start.getTime() + Number(config.duration_minutes) * 60000);
+      effectiveEnd = new Date(
+        start.getTime() +
+        Number(config.duration_minutes + config.buffer_minutes) * 60000,
+      );
+      shouldValidateTimeWindow = true;
+    }
 
+    //TO DO: mutate status
+    // if ("status" in updates) {
+    // }
+
+    if (shouldValidateTimeWindow) {
+      await assertNewTimeWindowIsValid(
+        dbClient,
+        appointmentId,
+        stylistId,
+        start,
+        end,
+        effectiveEnd,
+      );
+      //push new start, end, effectiveend
       fields.push(`start_time = $${index++}`);
       values.push(start);
-      const stylistId = appointment.rows[0].stylist_id;
-
-      const { pet_id, service_id } = appointment?.rows[0];
-      const pet = await getPet(dbClient, pet_id);
-      const { weight_class_id, breed: breed_id } = pet;
-
-      const config = await getActiveServiceConfigurationByFKs(
-        dbClient,
-        service_id,
-        breed_id,
-        weight_class_id,
-      );
-      const end = new Date(
-        start.getTime() + Number(config.duration_minutes) * 60000,
-      );
       fields.push(`end_time = $${index++}`);
       values.push(end);
-
-      const effectiveEnd = new Date(
-        start.getTime() +
-          Number(config.duration_minutes + config.buffer_minutes) * 60000,
-      );
       fields.push(`effective_end_time = $${index++}`);
       values.push(effectiveEnd);
-      //appointment start and end must be on the same day
-      assertStartEndOnSameDay(start, end);
-      //stylist must have availability
-      const availabilityData = await getAvailability(dbClient, stylistId);
-      assertStylistIsAvailable(availabilityData, stylistId, start, end);
-
-      const timeOffsData = await getTimeOff(dbClient, stylistId);
-
-      //check for time off overlap if time off data exists
-
-      assertNoTimeOffOverlap(timeOffsData, stylistId, start, end);
-
-      //appointment cannot overlap with another appointment
-      await assertNoAppointmentOverlap(dbClient, stylistId, start, end);
     }
-    if ("status" in updates) {
-      //TO DO: mutate status
-    }
+
+    //TODO
+    //push newPrice
+    // if (currPrice !== newPrice) {
+    // }
 
     values.push(appId);
+
+    if (fields.length === 0) {
+      throw new Error("no valid changes to update");
+    }
     const updateRes = await dbClient.query(
       `
-      UPDATE appointments
-      SET ${fields.join(", ")}, updated_at = NOW()
-      WHERE id = $${index}
-      RETURNING *
-      `,
+        UPDATE appointments
+        SET ${fields.join(", ")}, updated_at = NOW()
+        WHERE id = $${index}
+        RETURNING *
+        `,
       values,
     );
 
     await dbClient.query("COMMIT");
-
     return updateRes.rows[0];
   } catch (err) {
     await dbClient.query("ROLLBACK");
