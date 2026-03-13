@@ -232,7 +232,7 @@ async function getClientSnapshot(client, clientId) {
   const userRes = await client.query(
     `
     SELECT id, first_name, last_name
-    FROM users
+    FROM clients
     WHERE id = $1
     `,
     [clientId],
@@ -250,7 +250,7 @@ async function getClient(dbClient, clientId) {
   const userRes = await dbClient.query(
     `
     SELECT id, first_name, last_name
-    FROM users
+    FROM clients
     WHERE id = $1
     `,
     [clientId],
@@ -511,7 +511,7 @@ export async function book({
   service_id: serviceId,
   service_configuration_id: serviceConfigurationId,
   stylist_id: stylistId,
-  startTime,
+  start_time: startTime,
   description = null,
   status = null,
 }) {

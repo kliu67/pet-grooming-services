@@ -61,7 +61,7 @@ describe("appointments schema integration", () => {
     }
   });
 
-  it("has foreign keys to users, pets, stylists, and service mapping table", async () => {
+  it("has foreign keys to clients, pets, stylists, and service mapping table", async () => {
     const { rows } = await pool.query(
       `
       SELECT confrelid::regclass::text AS referenced_table
@@ -73,7 +73,7 @@ describe("appointments schema integration", () => {
 
     const referencedTables = new Set(rows.map((row) => row.referenced_table));
 
-    expect(referencedTables.has("users")).toBe(true);
+    expect(referencedTables.has("clients")).toBe(true);
     expect(referencedTables.has("pets")).toBe(true);
     expect(referencedTables.has("stylists")).toBe(true);
     const hasServiceConfigFk = referencedTables.has("service_configurations");

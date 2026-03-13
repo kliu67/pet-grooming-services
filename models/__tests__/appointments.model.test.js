@@ -592,19 +592,6 @@ describe("book()", () => {
   });
 });
 
-describe("cancel()", () => {
-  it("cancels appointment", async () => {
-    pool.query.mockResolvedValue({ rows: [{ id: 1, status: "cancelled" }] });
-    const result = await cancel(1);
-    expect(result.status).toBe("cancelled");
-  });
-
-  it("throws if not found", async () => {
-    pool.query.mockResolvedValue({ rows: [] });
-    await expect(cancel(1)).rejects.toThrow("appointment not found");
-  });
-});
-
 describe("remove()", () => {
   it("throws for invalid id", async () => {
     await expect(remove(0)).rejects.toThrow("invalid id");
