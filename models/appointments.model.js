@@ -1,7 +1,7 @@
 import { pool } from "../db.js";
 import { parseTimeToMinutes, parseDateToMinutes } from "../utils/timeRanges.js";
 import { areIntervalsOverlapping } from "date-fns";
-import { validateDescription } from "../validators/validator.js";
+import { validateDescription, validateStatus } from "../validators/validator.js";
 
 // const DB_FIELDS = {
 //   appointments: {
@@ -511,8 +511,9 @@ export async function book({
   service_id: serviceId,
   service_configuration_id: serviceConfigurationId,
   stylist_id: stylistId,
-  start_time: startTime,
+  startTime,
   description = null,
+  status = null,
 }) {
   clientId = validateId(clientId, "client_id");
   petId = validateId(petId, "pet_id");
@@ -572,7 +573,13 @@ export async function book({
     //appointment cannot overlap with another appointment
     await assertNoAppointmentOverlap(dbClient, stylistId, start, effectiveEnd);
 
-    const status = "booked";
+    if(description){
+      validateDescription(description);
+    }
+
+    if(status){
+      validateStatus(status);
+    }
 
     const insertRes = await dbClient.query(
       `
@@ -625,6 +632,24 @@ export async function cancel(id) {
   }
 
   return rows[0];
+}
+
+export async function remove(id) {
+  const numericId = validateId(id);
+
+  const { rowCount } = await pool.query(
+    `
+    DELETE FROM appointments
+    WHERE id = $1
+    `,
+    [numericId],
+  );
+
+  if (rowCount === 0) {
+    throw new Error("appointment not found");
+  }
+
+  return true;
 }
 
 export async function update(id, updates) {
@@ -789,10 +814,22 @@ export async function update(id, updates) {
       values.push(effectiveEnd);
     }
 
-    //TODO
-    //push newPrice
-    // if (currPrice !== newPrice) {
-    // }
+    if("description" in updates){
+      const description = updates.description;
+      if(validateDescription(description)){
+        fields.push(`description = $${index++}`);
+        values.push(description);
+      }
+
+    }
+
+    if("status" in updates){
+      const status = updates?.status;
+      if(validateStatus(status)){
+        fields.push(`status = $${index++}`);
+        values.push(status);
+      }
+    }
 
     values.push(appId);
 

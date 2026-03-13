@@ -220,4 +220,33 @@ describe("Appointment Routes", () => {
       expect(res.status).toBe(400);
     });
   });
+
+  describe("DELETE /appointments/:id", () => {
+    it("deletes appointment", async () => {
+      Appointment.remove.mockResolvedValue(true);
+
+      const res = await request(app).delete("/appointments/1");
+
+      expect(res.status).toBe(204);
+      expect(Appointment.remove).toHaveBeenCalledWith("1");
+    });
+
+    it("returns 404 if not found", async () => {
+      Appointment.remove.mockRejectedValue(new Error("appointment not found"));
+
+      const res = await request(app).delete("/appointments/1");
+
+      expect(res.status).toBe(404);
+      expect(res.body.error).toBe("appointment not found");
+    });
+
+    it("returns 400 for invalid id", async () => {
+      Appointment.remove.mockRejectedValue(new Error("invalid id"));
+
+      const res = await request(app).delete("/appointments/abc");
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("invalid id");
+    });
+  });
 });

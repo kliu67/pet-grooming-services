@@ -4,7 +4,8 @@ import {
   getAppointmentById,
   cancelAppointment,
   updateAppointment,
-  getAllAppointments
+  getAllAppointments,
+  deleteAppointment,
 } from "../controllers/appointments.controller.js";
 
 const appointmentRoutes = express.Router();
@@ -14,5 +15,6 @@ appointmentRoutes.post("/", bookAppointment);
 appointmentRoutes.get("/:id", getAppointmentById);
 appointmentRoutes.patch("/:id/cancel", cancelAppointment);
 appointmentRoutes.patch("/:id/update", updateAppointment);
+appointmentRoutes.delete("/:id", deleteAppointment);
 
 export default appointmentRoutes;

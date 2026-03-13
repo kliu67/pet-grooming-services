@@ -17,6 +17,7 @@ import {
   book,
   findById,
   cancel,
+  remove,
   update,
   findAll,
   findByClientId,
@@ -601,6 +602,22 @@ describe("cancel()", () => {
   it("throws if not found", async () => {
     pool.query.mockResolvedValue({ rows: [] });
     await expect(cancel(1)).rejects.toThrow("appointment not found");
+  });
+});
+
+describe("remove()", () => {
+  it("throws for invalid id", async () => {
+    await expect(remove(0)).rejects.toThrow("invalid id");
+  });
+
+  it("throws if not found", async () => {
+    pool.query.mockResolvedValue({ rowCount: 0 });
+    await expect(remove(1)).rejects.toThrow("appointment not found");
+  });
+
+  it("returns true when deleted", async () => {
+    pool.query.mockResolvedValue({ rowCount: 1 });
+    await expect(remove(1)).resolves.toBe(true);
   });
 });
 

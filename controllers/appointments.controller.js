@@ -98,3 +98,21 @@ export async function updateAppointment(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+export async function deleteAppointment(req, res) {
+  try {
+    const { id } = req.params;
+    await Appointment.remove(id);
+    return res.sendStatus(204);
+  } catch (err) {
+    if (err.message === "appointment not found") {
+      return res.status(404).json({ error: err.message });
+    }
+
+    if (err.message.includes("invalid")) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    return res.status(500).json({ error: err.message });
+  }
+}
