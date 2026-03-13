@@ -6,7 +6,21 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-     "test": "cross-env NODE_ENV=test vitest run"
+    "debug": "nodemon --exec node --inspect-brk index.js",
+    "test_backup": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test": "npx jest --watch",
+    "vitest": "vitest",
+    "vitest:coverage": "vitest run --coverage",
+    "migrate": "node db/migrate.js",
+    "seed:breeds": "node db/seeds/seedBreeds.js",
+    "seed:services": "node db/seeds/seedServices.js",
+    "seed:clients": "node db/seeds/seedClients.js",
+    "seed:pets": "node db/seeds/seedPets.js",
+    "seed:stylists": "node db/seeds/seedStylists.js",
+    "seed:availability": "node db/seeds/seedAvailability.js",
+    "seed:timeoff": "node db/seeds/seedTimeOff.js",
+    "seed:noServiceBreeds": "node db/seeds/seedNoServiceBreeds.js",
+    "seed:serviceConfigurations": "node db/seeds/seedServiceConfigurations.js"
   },
   "keywords": [],
   "author": "",
@@ -14,14 +28,23 @@
   "type": "module",
   "dependencies": {
     "cors": "^2.8.6",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "pg": "^8.18.0",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@eslint/css": "^0.14.1",
+    "@eslint/json": "^1.0.1",
+    "@eslint/markdown": "^7.5.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "cross-env": "^10.1.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.3.0",
     "nodemon": "^3.1.11",
     "supertest": "^7.2.2",
     "vitest": "^4.0.18"
