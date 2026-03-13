@@ -32,7 +32,7 @@ export async function findAll() {
   const { rows } = await pool.query(
     `
     SELECT id, stylist_id, start_datetime, end_datetime, reason
-    FROM stylist_time_off
+    FROM stylist_time_offs
     ORDER BY stylist_id, start_datetime
     `
   );
@@ -46,7 +46,7 @@ export async function findById(id) {
   const { rows } = await pool.query(
     `
     SELECT id, stylist_id, start_datetime, end_datetime, reason
-    FROM stylist_time_off
+    FROM stylist_time_offs
     WHERE id = $1
     `,
     [sanitizedId]
@@ -61,7 +61,7 @@ export async function findByStylistId(id) {
   const { rows } = await pool.query(
     `
     SELECT id, stylist_id, start_datetime, end_datetime, reason
-    FROM stylist_time_off
+    FROM stylist_time_offs
     WHERE stylist_id = $1
     `,
     [sanitizedId]
@@ -81,7 +81,7 @@ export async function create({ stylist_id, start_datetime, end_datetime, reason 
   try {
     const { rows } = await pool.query(
       `
-      INSERT INTO stylist_time_off (stylist_id, start_datetime, end_datetime, reason)
+      INSERT INTO stylist_time_offs (stylist_id, start_datetime, end_datetime, reason)
       VALUES ($1, $2, $3, $4)
       RETURNING id, stylist_id, start_datetime, end_datetime, reason
       `,
@@ -149,7 +149,7 @@ export async function update(id, updates) {
   try {
     const { rows } = await pool.query(
       `
-      UPDATE stylist_time_off
+      UPDATE stylist_time_offs
       SET ${fields.join(", ")}
       WHERE id = $${index}
       RETURNING id, stylist_id, start_datetime, end_datetime, reason
@@ -178,7 +178,7 @@ export async function remove(id) {
 
   const { rowCount } = await pool.query(
     `
-    DELETE FROM stylist_time_off
+    DELETE FROM stylist_time_offs
     WHERE id = $1
     `,
     [numericId]

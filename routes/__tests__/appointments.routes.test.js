@@ -154,56 +154,56 @@ describe("Appointment Routes", () => {
     });
   });
 
-  describe("PATCH /appointments/:id/reschedule", () => {
-    it("reschedules appointment", async () => {
+  describe("PATCH /appointments/:id/update", () => {
+    it("updates appointment", async () => {
       const updated = {
         id: 1,
-        start_time: "2026-01-01T12:00:00Z",
+        startTime: "2026-01-01T12:00:00Z",
         status: "booked"
       };
 
-      Appointment.reschedule.mockResolvedValue(updated);
+      Appointment.update.mockResolvedValue(updated);
 
       const res = await request(app)
-        .patch("/appointments/1/reschedule")
-        .send({ start_time: "2026-01-01T12:00:00Z" });
+        .patch("/appointments/1/update")
+        .send({ startTime: "2026-01-01T12:00:00Z" });
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(updated);
     });
 
     it("returns 409 if stylist is not available", async () => {
-      Appointment.reschedule.mockRejectedValue(
+      Appointment.update.mockRejectedValue(
         new Error("stylist is not available at that time")
       );
 
       const res = await request(app)
-        .patch("/appointments/1/reschedule")
+        .patch("/appointments/1/update")
         .send({ start_time: "2026-01-01T12:00:00Z" });
 
       expect(res.status).toBe(409);
     });
 
-    it("returns 409 when reschedule violates stylist buffer", async () => {
-      Appointment.reschedule.mockRejectedValue(
+    it("returns 409 when update violates stylist buffer", async () => {
+      Appointment.update.mockRejectedValue(
         new Error("stylist is not available at that time")
       );
 
       const res = await request(app)
-        .patch("/appointments/1/reschedule")
+        .patch("/appointments/1/update")
         .send({ start_time: "2026-01-01T12:00:00Z" });
 
       expect(res.status).toBe(409);
       expect(res.body.error).toContain("stylist is not available");
     });
 
-    it("returns 409 when reschedule overlaps stylist time off", async () => {
-      Appointment.reschedule.mockRejectedValue(
+    it("returns 409 when update overlaps stylist time off", async () => {
+      Appointment.update.mockRejectedValue(
         new Error("stylist is not available at that time")
       );
 
       const res = await request(app)
-        .patch("/appointments/1/reschedule")
+        .patch("/appointments/1/update")
         .send({ start_time: "2026-01-01T12:00:00Z" });
 
       expect(res.status).toBe(409);
@@ -211,13 +211,42 @@ describe("Appointment Routes", () => {
     });
 
     it("returns 400 for invalid input", async () => {
-      Appointment.reschedule.mockRejectedValue(new Error("invalid start_time"));
+      Appointment.update.mockRejectedValue(new Error("invalid start_time"));
 
       const res = await request(app)
-        .patch("/appointments/1/reschedule")
+        .patch("/appointments/1/update")
         .send({ start_time: "bad" });
 
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe("DELETE /appointments/:id", () => {
+    it("deletes appointment", async () => {
+      Appointment.remove.mockResolvedValue(true);
+
+      const res = await request(app).delete("/appointments/1");
+
+      expect(res.status).toBe(204);
+      expect(Appointment.remove).toHaveBeenCalledWith("1");
+    });
+
+    it("returns 404 if not found", async () => {
+      Appointment.remove.mockRejectedValue(new Error("appointment not found"));
+
+      const res = await request(app).delete("/appointments/1");
+
+      expect(res.status).toBe(404);
+      expect(res.body.error).toBe("appointment not found");
+    });
+
+    it("returns 400 for invalid id", async () => {
+      Appointment.remove.mockRejectedValue(new Error("invalid id"));
+
+      const res = await request(app).delete("/appointments/abc");
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("invalid id");
     });
   });
 });

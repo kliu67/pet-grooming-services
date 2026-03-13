@@ -7,7 +7,7 @@ import { MAX_NAME_LENGTH } from "../utils/constants.js";
  */
 export async function findAll() {
   const { rows } = await pool.query(
-    "SELECT id, first_name, last_name, email, phone, description, created_at FROM users ORDER BY id"
+    "SELECT id, first_name, last_name, email, phone, description, created_at FROM clients ORDER BY id"
   );
   return rows;
 }
@@ -19,7 +19,7 @@ export async function findById(id) {
   const sanitizedId = validateNumericId(id);
 
   const { rows } = await pool.query(
-    "SELECT id, first_name, last_name, email, phone, description, created_at FROM users WHERE id = $1",
+    "SELECT id, first_name, last_name, email, phone, description, created_at FROM clients WHERE id = $1",
     [sanitizedId]
   );
 
@@ -73,7 +73,7 @@ export async function create({ first_name, last_name, email, phone, description 
   try{
     const { rows } = await pool.query(
       `
-      INSERT INTO users (first_name, last_name, email, phone, description)
+      INSERT INTO clients (first_name, last_name, email, phone, description)
       VALUES ($1, $2, $3, $4, $5)
       RETURNING id, first_name, last_name, email, phone ,description
       `,
@@ -84,11 +84,13 @@ export async function create({ first_name, last_name, email, phone, description 
 
   catch(err){
      if (err.code === '23505') {
-    if (err.constraint === 'users_email_key') {
+    if (err.constraint === 'clients_email_key' || err.constraint === 'users_email_key') {
       throw new Error('email already exists');
     }
 
     if (
+      err.constraint === 'clients_first_name_last_name_phone_key' ||
+      err.constraint === 'clients_first_name_last_name_phone_ci_key' ||
       err.constraint === 'users_first_name_last_name_phone_key' ||
       err.constraint === 'users_first_name_last_name_phone_ci_key'
     ) {
@@ -203,7 +205,7 @@ export async function update(id, updates) {
   try {
     const { rows } = await pool.query(
       `
-      UPDATE users
+      UPDATE clients
       SET ${fields.join(', ')}
       WHERE id = $${index}
       RETURNING id, first_name, last_name, email, phone, description
@@ -219,10 +221,12 @@ export async function update(id, updates) {
 
   } catch (err) {
     if (err.code === '23505') {
-      if (err.constraint === 'users_email_key') {
+      if (err.constraint === 'clients_email_key' || err.constraint === 'users_email_key') {
         throw new Error('email already exists');
       }
       if (
+        err.constraint === 'clients_first_name_last_name_phone_key' ||
+        err.constraint === 'clients_first_name_last_name_phone_ci_key' ||
         err.constraint === 'users_first_name_last_name_phone_key' ||
         err.constraint === 'users_first_name_last_name_phone_ci_key'
       ) {
@@ -248,7 +252,7 @@ export async function remove(id) {
   try {
     const { rowCount } = await pool.query(
       `
-      DELETE FROM users
+      DELETE FROM clients
       WHERE id = $1
       `,
       [numericId]

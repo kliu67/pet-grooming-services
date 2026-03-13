@@ -57,3 +57,11 @@ app.use("/api/availability", stylistAvailabilityRoutes);
 app.use("/api/timeOffs", stylistTimeOffRoutes);
 
 
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
+});
+
+process.on("unhandledRejection", (err) => console.error("Unhandled Rejection:", err));
+process.on("uncaughtException", (err) => console.error("Uncaught Exception:", err));
+

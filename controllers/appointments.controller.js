@@ -72,12 +72,12 @@ export async function cancelAppointment(req, res) {
   }
 }
 
-export async function rescheduleAppointment(req, res) {
+export async function updateAppointment(req, res) {
   try {
     const { id } = req.params;
-    const { start_time } = req.body;
+    const { startTime } = req.body;
 
-    const updated = await Appointment.reschedule(id, start_time);
+    const updated = await Appointment.update(id, req.body);
     return res.status(200).json(updated);
   } catch (err) {
     if (err.message === "appointment not found") {
@@ -93,6 +93,24 @@ export async function rescheduleAppointment(req, res) {
       err.message.includes("not available")
     ) {
       return res.status(409).json({ error: err.message });
+    }
+
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+export async function deleteAppointment(req, res) {
+  try {
+    const { id } = req.params;
+    await Appointment.remove(id);
+    return res.sendStatus(204);
+  } catch (err) {
+    if (err.message === "appointment not found") {
+      return res.status(404).json({ error: err.message });
+    }
+
+    if (err.message.includes("invalid")) {
+      return res.status(400).json({ error: err.message });
     }
 
     return res.status(500).json({ error: err.message });

@@ -143,7 +143,7 @@ export async function update(id, updates) {
     values.push(ownerId);
 
       try {
-      await pool.query(`SELECT id FROM users WHERE id = $1`, [
+      await pool.query(`SELECT id FROM clients WHERE id = $1`, [
         ownerId
       ]);
     } catch (err) {
