@@ -2,20 +2,20 @@ import request from "supertest";
 import express from "express";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import userRoutes from "../users.routes.js";
-import * as User from "../../models/users.model.js";
+import clientRoutes from "../clients.routes.js";
+import * as Client from "../../models/clients.model.js";
 
 //
 // Mock the model (NO DB)
 //
-vi.mock("../../models/users.model.js");
+vi.mock("../../models/clients.model.js");
 
 //
 // Build test app
 //
 const app = express();
 app.use(express.json());
-app.use("/users", userRoutes);
+app.use("/clients", clientRoutes);
 
 //
 // Optional: error middleware for tests
@@ -29,63 +29,63 @@ beforeEach(() => {
 });
 
 //
-// GET /users
+// GET /clients
 //
-describe("GET /users", () => {
-  it("returns all users", async () => {
-    User.findAll.mockResolvedValue([{ id: 1 }]);
+describe("GET /clients", () => {
+  it("returns all clients", async () => {
+    Client.findAll.mockResolvedValue([{ id: 1 }]);
 
-    const res = await request(app).get("/users");
+    const res = await request(app).get("/clients");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([{ id: 1 }]);
   });
 
   it("handles server error", async () => {
-    User.findAll.mockRejectedValue(new Error("DB error"));
+    Client.findAll.mockRejectedValue(new Error("DB error"));
 
-    const res = await request(app).get("/users");
+    const res = await request(app).get("/clients");
 
     expect(res.status).toBe(500);
   });
 });
 
 //
-// GET /users/:id
+// GET /clients/:id
 //
-describe("GET /users/:id", () => {
-  it("returns user", async () => {
-    User.findById.mockResolvedValue({ id: 1 });
+describe("GET /clients/:id", () => {
+  it("returns client", async () => {
+    Client.findById.mockResolvedValue({ id: 1 });
 
-    const res = await request(app).get("/users/1");
+    const res = await request(app).get("/clients/1");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: 1 });
   });
 
   it("returns 404 if not found", async () => {
-    User.findById.mockResolvedValue(null);
+    Client.findById.mockResolvedValue(null);
 
-    const res = await request(app).get("/users/1");
+    const res = await request(app).get("/clients/1");
 
     expect(res.status).toBe(404);
   });
 
   it("returns 400 for invalid id", async () => {
-    const res = await request(app).get("/users/abc");
+    const res = await request(app).get("/clients/abc");
 
     expect(res.status).toBe(400);
   });
 });
 
 //
-// POST /users
+// POST /clients
 //
-describe("POST /users", () => {
-  it("creates user", async () => {
-    User.create.mockResolvedValue({ id: 1 });
+describe("POST /clients", () => {
+  it("creates client", async () => {
+    Client.create.mockResolvedValue({ id: 1 });
 
-    const res = await request(app).post("/users").send({
+    const res = await request(app).post("/clients").send({
       first_name: "John", last_name: "Doe",
       phone: "1234567890",
       email: "john@test.com",
@@ -96,15 +96,15 @@ describe("POST /users", () => {
   });
 
   it("returns 400 for missing fields", async () => {
-    const res = await request(app).post("/users").send({});
+    const res = await request(app).post("/clients").send({});
 
     expect(res.status).toBe(400);
   });
 
   it("returns 409 for duplicate", async () => {
-    User.create.mockRejectedValue(new Error("email already exists"));
+    Client.create.mockRejectedValue(new Error("email already exists"));
 
-    const res = await request(app).post("/users").send({
+    const res = await request(app).post("/clients").send({
       first_name: "John",
       last_name: "Doe",
       phone: "1234567890",
@@ -115,9 +115,9 @@ describe("POST /users", () => {
   });
 
   it("handles server error", async () => {
-    User.create.mockRejectedValue(new Error("DB error"));
+    Client.create.mockRejectedValue(new Error("DB error"));
 
-    const res = await request(app).post("/users").send({
+    const res = await request(app).post("/clients").send({
       first_name: "John", last_name: "Doe",
       phone: "1234567890",
     });
@@ -127,14 +127,14 @@ describe("POST /users", () => {
 });
 
 //
-// PUT /users/:id
+// PUT /clients/:id
 //
-describe("PUT /users/:id", () => {
-  it("updates user", async () => {
-    User.update.mockResolvedValue({ id: 1 });
+describe("PUT /clients/:id", () => {
+  it("updates client", async () => {
+    Client.update.mockResolvedValue({ id: 1 });
 
     const res = await request(app)
-      .put("/users/1")
+      .put("/clients/1")
       .send({ first_name: "New", last_name: "Name" });
 
     expect(res.status).toBe(200);
@@ -142,36 +142,36 @@ describe("PUT /users/:id", () => {
   });
 
   it("returns 400 when no fields provided", async () => {
-    const res = await request(app).put("/users/1").send({});
+    const res = await request(app).put("/clients/1").send({});
 
     expect(res.status).toBe(400);
   });
 
-  it("returns 404 if user not found", async () => {
-    User.update.mockResolvedValue(null);
+  it("returns 404 if client not found", async () => {
+    Client.update.mockResolvedValue(null);
 
     const res = await request(app)
-      .put("/users/1")
+      .put("/clients/1")
       .send({ first_name: "New", last_name: "Name" });
 
     expect(res.status).toBe(404);
   });
 
   it("returns 409 for duplicate", async () => {
-    User.update.mockRejectedValue(new Error("email already exists"));
+    Client.update.mockRejectedValue(new Error("email already exists"));
 
     const res = await request(app)
-      .put("/users/1")
+      .put("/clients/1")
       .send({ email: "dup@test.com" });
 
     expect(res.status).toBe(409);
   });
 
   it("handles server error", async () => {
-    User.update.mockRejectedValue(new Error("DB error"));
+    Client.update.mockRejectedValue(new Error("DB error"));
 
     const res = await request(app)
-      .put("/users/1")
+      .put("/clients/1")
       .send({ first_name: "New", last_name: "Name" });
 
     expect(res.status).toBe(500);
@@ -179,29 +179,29 @@ describe("PUT /users/:id", () => {
 });
 
 //
-// DELETE /users/:id
+// DELETE /clients/:id
 //
-describe("DELETE /users/:id", () => {
-  it("deletes user", async () => {
-    User.remove.mockResolvedValue(true);
+describe("DELETE /clients/:id", () => {
+  it("deletes client", async () => {
+    Client.remove.mockResolvedValue(true);
 
-    const res = await request(app).delete("/users/1");
+    const res = await request(app).delete("/clients/1");
 
     expect(res.status).toBe(204);
   });
 
   it("returns 404 if not found", async () => {
-    User.remove.mockResolvedValue(false);
+    Client.remove.mockResolvedValue(false);
 
-    const res = await request(app).delete("/users/1");
+    const res = await request(app).delete("/clients/1");
 
     expect(res.status).toBe(404);
   });
 
   it("handles server error", async () => {
-    User.remove.mockRejectedValue(new Error("DB error"));
+    Client.remove.mockRejectedValue(new Error("DB error"));
 
-    const res = await request(app).delete("/users/1");
+    const res = await request(app).delete("/clients/1");
 
     expect(res.status).toBe(500);
   });

@@ -1,4 +1,4 @@
-ALTER TABLE users
-DROP CONSTRAINT IF EXISTS users_phone_key;
+ALTER TABLE clients
+DROP CONSTRAINT IF EXISTS clients_phone_key;
 
-DROP INDEX IF EXISTS users_phone_unique;
+DROP INDEX IF EXISTS clients_phone_unique;

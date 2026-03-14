@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { pool, initDb } from "./db.js";
-import userRoutes from "./routes/users.routes.js";
+import clientRoutes from "./routes/clients.routes.js";
 import serviceRoutes from "./routes/services.routes.js"
 import petRoutes from "./routes/pets.routes.js";
 import breedsRoutes from "./routes/breeds.routes.js";
@@ -45,7 +45,7 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/api/users", userRoutes);
+app.use("/api/clients", clientRoutes);
 app.use("/services", serviceRoutes);
 app.use("/api/pets", petRoutes);
 app.use("/api/breeds", breedsRoutes);

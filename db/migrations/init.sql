@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   executed_at TIMESTAMP DEFAULT NOW()
 );
 
- CREATE TABLE IF NOT EXISTS users (
+ CREATE TABLE IF NOT EXISTS clients (
     id SERIAL PRIMARY KEY,
     first_name VARCHAR(60) NOT NULL,
     last_name VARCHAR(60) NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
         name VARCHAR(60) NOT NULL
           CHECK (length(trim(name)) > 0),
         breeds INTEGER NOT NULL REFERENCES breeds(id),
-        owner INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        owner INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
         uuid UUID UNIQUE DEFAULT gen_random_uuid(),
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
    CREATE TABLE IF NOT EXISTS appointments(
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE RESTRICT NOT NULL,
+        client_id INTEGER REFERENCES clients(id) ON DELETE RESTRICT NOT NULL,
         pet_id INTEGER REFERENCES pets(id) ON DELETE RESTRICT NOT NULL,
         service_id INTEGER REFERENCES services(id) ON DELETE RESTRICT NOT NULL,
         description TEXT,
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
         updated_at TIMESTAMP
         );
         
-        CREATE INDEX IF NOT EXISTS idx_appt_user   ON appointments(user_id);
+        CREATE INDEX IF NOT EXISTS idx_appt_client   ON appointments(client_id);
         CREATE INDEX IF NOT EXISTS idx_appt_pet    ON appointments(pet_id);
         CREATE INDEX IF NOT EXISTS idx_appt_start  ON appointments(start_time);
         CREATE INDEX IF NOT EXISTS idx_appt_pet_start  ON appointments(pet_id, start_time);

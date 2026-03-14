@@ -2,7 +2,7 @@ import * as Pet from "../models/pets.model.js";
 
 /**
  * GET /pets/owner/:ownerId
- * Get all pets for a user
+ * Get all pets for a client
  */
 export async function getPetsByOwner(req, res) {
   try {

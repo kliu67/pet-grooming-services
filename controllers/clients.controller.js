@@ -1,23 +1,23 @@
-import * as User from "../models/users.model.js";
+import * as Client from "../models/clients.model.js";
 import { isValidEmail } from "../utils/helpers.js";
-import { isValidPhone } from "../validators/user.validator.js";
+import { isValidPhone } from "../validators/client.validator.js";
 
 /**
- * GET /users
+ * GET /clients
  */
-export async function getAllUsers(req, res, next) {
+export async function getAllClients(req, res, next) {
   try {
-    const users = await User.findAll();
-    res.json(users);
+    const clients = await Client.findAll();
+    res.json(clients);
   } catch (err) {
     next(err);
   }
 }
 
 /**
- * GET /users/:id
+ * GET /clients/:id
  */
-export async function getUserById(req, res, next) {
+export async function getClientById(req, res, next) {
   const { id } = req.params;
 
   if (!/^\d+$/.test(id)) {
@@ -25,19 +25,19 @@ export async function getUserById(req, res, next) {
   }
 
   try {
-    const user = await User.findById(id);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    const client = await Client.findById(id);
+    if (!client) return res.status(404).json({ error: "Client not found" });
 
-    res.json(user);
+    res.json(client);
   } catch (err) {
     next(err);
   }
 }
 
 /**
- * POST /users
+ * POST /clients
  */
-export async function createUser(req, res, next) {
+export async function createClient(req, res, next) {
   const { first_name, last_name, phone, email } = req.body;
 
   if (!first_name || !last_name || !phone) {
@@ -55,8 +55,8 @@ export async function createUser(req, res, next) {
   }
 
   try {
-    const user = await User.create(req.body);
-    res.status(201).json(user);
+    const client = await Client.create(req.body);
+    res.status(201).json(client);
   } catch (err) {
     if (err.message?.includes("already exists")) {
       return res.status(409).json({ error: err.message });
@@ -66,9 +66,9 @@ export async function createUser(req, res, next) {
 }
 
 /**
- * PUT /users/:id
+ * PUT /clients/:id
  */
-export async function updateUser(req, res, next) {
+export async function updateClient(req, res, next) {
   const { id } = req.params;
   const { first_name, last_name, phone, email, description } = req.body;
 
@@ -88,15 +88,15 @@ export async function updateUser(req, res, next) {
   }
 
   try {
-    const user = await User.update(id, req.body);
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
+    const client = await Client.update(id, req.body);
+    if (!client) return res.status(404).json({ error: "Client not found" });
+    res.json(client);
   } catch (err) {
     if (err.message === "invalid id") {
       return res.status(400).json({ error: "invalid id" });
     }
-    if (err.message === "user not found") {
-      return res.status(404).json({ error: "User not found" });
+    if (err.message === "client not found") {
+      return res.status(404).json({ error: "Client not found" });
     }
     if (err.message?.includes("already exists")) {
       return res.status(409).json({ error: err.message });
@@ -106,22 +106,22 @@ export async function updateUser(req, res, next) {
 }
 
 /**
- * DELETE /users/:id
+ * DELETE /clients/:id
  */
-export async function deleteUser(req, res, next) {
+export async function deleteClient(req, res, next) {
   const { id } = req.params;
 
   try {
-    const ok = await User.remove(id);
-    if (!ok) return res.status(404).json({ error: "User not found" });
+    const ok = await Client.remove(id);
+    if (!ok) return res.status(404).json({ error: "Client not found" });
 
     res.sendStatus(204);
   } catch (err) {
     if (err.message === "invalid id") {
       return res.status(400).json({ error: "invalid id" });
     }
-    if (err.message === "user not found") {
-      return res.status(404).json({ error: "User not found" });
+    if (err.message === "client not found") {
+      return res.status(404).json({ error: "Client not found" });
     }
     next(err);
   }

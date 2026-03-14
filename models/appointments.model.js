@@ -229,7 +229,7 @@ async function assertNewTimeWindowIsValid(
   return true;
 }
 async function getClientSnapshot(client, clientId) {
-  const userRes = await client.query(
+  const clientRes = await client.query(
     `
     SELECT id, first_name, last_name
     FROM clients
@@ -238,16 +238,16 @@ async function getClientSnapshot(client, clientId) {
     [clientId],
   );
 
-  if (!userRes.rows[0]) {
+  if (!clientRes.rows[0]) {
     throw new Error("client not found");
   }
 
-  const { first_name, last_name } = userRes.rows[0];
+  const { first_name, last_name } = clientRes.rows[0];
   return `${first_name} ${last_name}`.trim();
 }
 
 async function getClient(dbClient, clientId) {
-  const userRes = await dbClient.query(
+  const clientRes = await dbClient.query(
     `
     SELECT id, first_name, last_name
     FROM clients
@@ -256,11 +256,11 @@ async function getClient(dbClient, clientId) {
     [clientId],
   );
 
-  if (!userRes.rows[0]) {
+  if (!clientRes.rows[0]) {
     throw new Error("client not found");
   }
 
-  return userRes.rows[0];
+  return clientRes.rows[0];
 }
 
 async function getPet(dbClient, petId) {

@@ -7,7 +7,7 @@ BEGIN
     FROM information_schema.columns
     WHERE table_schema = 'public'
       AND table_name = 'appointments'
-      AND column_name = 'user_id'
+      AND column_name = 'client_id'
   ) AND NOT EXISTS (
     SELECT 1
     FROM information_schema.columns
@@ -16,7 +16,7 @@ BEGIN
       AND column_name = 'client_id'
   ) THEN
     ALTER TABLE public.appointments
-    RENAME COLUMN user_id TO client_id;
+    RENAME COLUMN client_id TO client_id;
   END IF;
 END$$;
 
@@ -98,9 +98,9 @@ END$$;
 
 DO $$
 BEGIN
-  IF to_regclass('public.idx_appt_user') IS NOT NULL
+  IF to_regclass('public.idx_appt_client') IS NOT NULL
      AND to_regclass('public.idx_appt_client') IS NULL THEN
-    ALTER INDEX public.idx_appt_user RENAME TO idx_appt_client;
+    ALTER INDEX public.idx_appt_client RENAME TO idx_appt_client;
   END IF;
 END$$;
 
