@@ -29,6 +29,7 @@ const FE_PORT = process.env.FEPORT || 5173;
 
 app.use(cors({
   origin: `http://localhost:${FE_PORT}`, // your frontend
+    credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
