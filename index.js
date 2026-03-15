@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import { pool, initDb } from "./db.js";
 import clientRoutes from "./routes/clients.routes.js";
 import serviceRoutes from "./routes/services.routes.js"
@@ -13,6 +14,7 @@ import stylistRoutes from "./routes/stylists.routes.js"
 import stylistAvailabilityRoutes from "./routes/stylistAvailability.routes.js"
 import stylistTimeOffRoutes from "./routes/stylistTimeOff.routes.js"
 import userRoutes from "./routes/users.routes.js"
+import authRoutes from "./routes/auth.routes.js"
 
 import { errorHandler } from "./middleware/error.middleware.js";
 
@@ -29,6 +31,7 @@ app.use(cors({
   origin: `http://localhost:${FE_PORT}`, // your frontend
 }));
 app.use(express.json());
+app.use(cookieParser());
 app.use(errorHandler);
 
 
@@ -57,6 +60,7 @@ app.use("/api/stylists", stylistRoutes);
 app.use("/api/availability", stylistAvailabilityRoutes);
 app.use("/api/timeOffs", stylistTimeOffRoutes);
 app.use("/api/users", userRoutes);
+app.use("/auth", authRoutes);
 
 
 app.use((err, req, res, next) => {
