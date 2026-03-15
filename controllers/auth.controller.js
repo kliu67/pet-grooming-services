@@ -1,5 +1,5 @@
 import * as authService from "../services/auth.service.js";
-
+import {SECURE} from "../utils/constants.js"
 export async function login(req, res){
     try{
         const {email, password } = req.body;
@@ -39,4 +39,22 @@ export async function refresh(req, res) {
   } catch (err) {
     res.status(401).json({ error: err.message });
   }
+}
+
+export async function logout(req, res) {
+    try{
+        const refreshToken = req.cookies?.refreshToken;
+
+        await authService.logout(refreshToken);
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: SECURE,
+            sameSite: "strict",
+            path: "/auth/refresh"
+        })
+
+        res.sendStatus(204);
+    } catch (err) {
+        res.status(500).json({error: err.message });
+    }
 }

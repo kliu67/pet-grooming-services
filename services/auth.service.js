@@ -75,3 +75,11 @@ export async function refresh(refreshToken) {
 
   return { accessToken, newRefreshToken };
 }
+
+export async function logout(refreshToken) {
+  if(!refreshToken) return;
+  await pool.query(
+    `DELETE FROM refresh_tokens WHERE token_hash = $1`,
+    [refreshToken]
+  );
+}
