@@ -1,16 +1,13 @@
 import { pool } from "../db.js";
 import { isValidEmail, isValidPhone } from "../validators/client.validator.js";
-import { bcrypt } from "bcrypt";
-import {
-  isIdValidNumeric,
-  validateNumericId
-} from "../validators/validator.js";
+import bcrypt from "bcrypt";
 import {
   MAX_NAME_LENGTH,
   MAX_PASS_LENGTH,
   MIN_PASS_LENGTH,
-  ROLES
+  ROLES,
 } from "../utils/constants.js";
+import { validateNumericId } from "../validators/validator.js";
 
 function assertEmailIsValid(email) {
   if (typeof email !== "string" || email.trim() === "") {
@@ -22,17 +19,24 @@ function assertEmailIsValid(email) {
 
 async function assertEmailNotExists(email) {
   const emailRes = await pool.query(`SELECT email FROM users WHERE email=$1`, [
-    email
+    email,
   ]);
-  if (!emailRes.rows[0]) throw new Error("email already exists");
+  if (emailRes.rows[0]) throw new Error("email already exists");
   return true;
 }
 
+function assertNameIsValid(name) {
+  if (typeof name !== "string" || name.trim() === "") {
+    throw new Error("first name and last name cannot be null or empty");
+  }
+
+  return true;
+}
 function assertPasswordIsValid(password) {
   if (password.length < MIN_PASS_LENGTH) {
     throw new Error("password is too short");
   }
-  if (password.length > MAX_NAME_LENGTH) {
+  if (password.length > MAX_PASS_LENGTH) {
     throw new Error("password is too long");
   }
   if (!/[A-Z]/.test(password)) {
@@ -58,19 +62,45 @@ function assertPhoneIsValid(phone) {
   return true;
 }
 
-/** Create user */
-export async function create({ email, password, phone }) {
-  //not null constraint
-  email = email.trim();
-  assertEmailIsValid();
-  assertEmailNotExists(email);
-  assertPasswordIsValid(password);
-  
-  //phone validation
-  phone = phone.trim();
-  assertPhoneIsValid(phone);
+/*Get all users */
+export async function findAll() {
+  const { rows } = await pool.query(
+    "SELECT id, email, phone, first_name, last_name, role, is_active FROM users ORDER BY id",
+  );
+  return rows;
+}
 
+/**
+ * Get user by id
+ */
+export async function findById(id) {
+  const sanitizedId = validateNumericId(id);
+  const { rows } = await pool.query(
+    "SELECT id, email, phone, first_name, last_name, role, is_active FROM users WHERE id = $1",
+    [sanitizedId],
+  );
+
+  return rows[0] ?? null;
+}
+
+/** Create user */
+export async function create({
+  email,
+  password,
+  phone,
+  first_name,
+  last_name,
+}) {
+  email = email.trim();
+  phone = phone.trim();
+  const firstName = first_name.trim();
+  const lastName = last_name.trim();
+  assertEmailIsValid(email);
+  await assertEmailNotExists(email);
   assertPasswordIsValid(password);
+  assertPhoneIsValid(phone);
+  assertNameIsValid(firstName);
+  assertNameIsValid(lastName);
 
   const hash = await bcrypt.hash(password, 10);
   const role = ROLES.default;
@@ -79,11 +109,11 @@ export async function create({ email, password, phone }) {
   try {
     const { rows } = await pool.query(
       `
-      INSERT INTO users (email, password_hash, role, is_active, phone)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, email, phone, role, is_active
+      INSERT INTO users (email, phone, first_name, last_name, password_hash, role, is_active)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, email, phone, first_name, last_name, role, is_active
       `,
-      [email, hash, role, is_active, phone]
+      [email, phone, firstName, lastName, hash, role, is_active],
     );
     return rows[0];
   } catch (err) {
@@ -95,4 +125,12 @@ export async function create({ email, password, phone }) {
     }
     throw err;
   }
+}
+export async function update(email, updates = {}) {}
+export async function remove(email) {}
+export async function login(email, password){
+
+}
+export async function logout(email){
+
 }

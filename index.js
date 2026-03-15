@@ -12,6 +12,7 @@ import appointmentRoutes from "./routes/appointments.routes.js"
 import stylistRoutes from "./routes/stylists.routes.js"
 import stylistAvailabilityRoutes from "./routes/stylistAvailability.routes.js"
 import stylistTimeOffRoutes from "./routes/stylistTimeOff.routes.js"
+import userRoutes from "./routes/users.routes.js"
 
 import { errorHandler } from "./middleware/error.middleware.js";
 
@@ -55,6 +56,7 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api/stylists", stylistRoutes);
 app.use("/api/availability", stylistAvailabilityRoutes);
 app.use("/api/timeOffs", stylistTimeOffRoutes);
+app.use("/api/users", userRoutes);
 
 
 app.use((err, req, res, next) => {
@@ -64,4 +66,3 @@ app.use((err, req, res, next) => {
 
 process.on("unhandledRejection", (err) => console.error("Unhandled Rejection:", err));
 process.on("uncaughtException", (err) => console.error("Uncaught Exception:", err));
-
