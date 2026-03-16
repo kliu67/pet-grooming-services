@@ -23,10 +23,14 @@ function getSslConfig() {
 
 function getPoolConfig() {
   const ssl = getSslConfig();
+  const databaseUrl = process.env.DATABASE_URL;
+  const hasConnectionString =
+    typeof databaseUrl === "string" &&
+    /^(postgres|postgresql):\/\//.test(databaseUrl);
 
-  if (process.env.DATABASE_URL) {
+  if (hasConnectionString) {
     return {
-      connectionString: process.env.DATABASE_URL,
+      connectionString: databaseUrl,
       ...(ssl ? { ssl } : {}),
     };
   }

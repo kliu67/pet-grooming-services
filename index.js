@@ -2,7 +2,9 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-import { initDb } from "./db.js";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { initDb, pool } from "./db.js";
 import clientRoutes from "./routes/clients.routes.js";
 import serviceRoutes from "./routes/services.routes.js"
 import petRoutes from "./routes/pets.routes.js";
@@ -27,14 +29,34 @@ export const app = express(); // export the app itself
 const PORT = process.env.PORT || 3000;
 const FE_PORT = process.env.FE_PORT || 5173;
 const FE_ORIGIN = process.env.FE_ORIGIN || `http://localhost:${FE_PORT}`;
+const isProduction = process.env.NODE_ENV === "production";
+const PgStore = connectPgSimple(session);
 
+app.set("trust proxy", 1);
 app.use(cors({
   origin: FE_ORIGIN,
   credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(errorHandler);
+app.use(
+  session({
+    name: "sid",
+    secret: process.env.SESSION_SECRET || "dev-session-secret",
+    resave: false,
+    saveUninitialized: false,
+    store: new PgStore({
+      pool,
+      createTableIfMissing: true,
+    }),
+    cookie: {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    },
+  })
+);
 
 
 if (process.env.NODE_ENV !== "test") {
@@ -67,6 +89,7 @@ app.use("/api/timeOffs", stylistTimeOffRoutes);
 app.use("/api/users", userRoutes);
 app.use("/auth", authRoutes);
 
+app.use(errorHandler);
 
 app.use((err, req, res, next) => {
   console.error(err);

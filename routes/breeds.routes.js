@@ -1,4 +1,5 @@
 import express from "express";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 import {
   getAllBreeds,
   getBreedById,
@@ -8,6 +9,8 @@ import {
 } from "../controllers/breeds.controller.js";
 
 const breedRoutes = express.Router();
+
+breedRoutes.use(authMiddleware);
 
 /* Get all breeds */
 breedRoutes.get("/", getAllBreeds);

@@ -10,4 +10,3 @@ export const ROLES = {
     stylist: 'stylist',
     client: 'client'
 }
-export const SECURE = false;

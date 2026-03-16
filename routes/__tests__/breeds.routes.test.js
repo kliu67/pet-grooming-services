@@ -4,6 +4,10 @@ import express from "express";
 import breedRoutes from "../breeds.routes.js";
 import * as Breeds from "../../models/breeds.model.js";
 
+vi.mock("../../middleware/auth.middleware.js", () => ({
+  authMiddleware: (_req, _res, next) => next(),
+}));
+
 /* ---------------- Mock Model ---------------- */
 vi.mock("../../models/breeds.model.js");
 

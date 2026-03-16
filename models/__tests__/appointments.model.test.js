@@ -28,7 +28,7 @@ import {
 
 const FUTURE_START = "2099-01-01T15:00:00.000Z";
 const NEAR_MIDNIGHT_START = "2028-03-01 23:00:00.000 -500";
-const TIMEOFF_OVERLAP_START = "2026-03-15 09:00:00.000 -0500";
+const TIMEOFF_OVERLAP_START = "2028-03-10 09:00:00.000 -0500";
 
 const availabilityRows = [
   {
@@ -68,8 +68,8 @@ const timeOffRows = [
 
   {
     stylist_id: 2,
-    start_datetime: "2026-03-15 00:00:00.000 -0500",
-    end_datetime: "2026-03-15 12:00:00.000 -0500",
+    start_datetime: "2028-03-10 00:00:00.000 -0500",
+    end_datetime: "2028-03-10 12:00:00.000 -0500",
     reason: "Dentist appointment",
   },
 
@@ -503,7 +503,7 @@ describe("book()", () => {
   });
 
   it(`throws when appointment time overlaps with stylist's time off`, async () => {
-    let start = new Date("2026-03-15 09:00:00.000 -0500");
+    let start = new Date(TIMEOFF_OVERLAP_START);
 
     mockQuery
       .mockResolvedValueOnce() // BEGIN

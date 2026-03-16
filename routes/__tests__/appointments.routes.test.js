@@ -4,6 +4,10 @@ import express from "express";
 import appointmentRoutes from "../appointments.routes.js";
 import * as Appointment from "../../models/appointments.model.js";
 
+vi.mock("../../middleware/auth.middleware.js", () => ({
+  authMiddleware: (_req, _res, next) => next(),
+}));
+
 vi.mock("../../models/appointments.model.js");
 
 const app = express();

@@ -4,6 +4,10 @@ import express from "express";
 import stylistRoutes from "../stylists.routes.js";
 import * as Stylist from "../../models/stylists.model.js";
 
+vi.mock("../../middleware/auth.middleware.js", () => ({
+  authMiddleware: (_req, _res, next) => next(),
+}));
+
 vi.mock("../../models/stylists.model.js");
 
 const app = express();

@@ -5,6 +5,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import clientRoutes from "../clients.routes.js";
 import * as Client from "../../models/clients.model.js";
 
+vi.mock("../../middleware/auth.middleware.js", () => ({
+  authMiddleware: (_req, _res, next) => next(),
+}));
+
 //
 // Mock the model (NO DB)
 //

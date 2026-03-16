@@ -1,23 +1,10 @@
-import { verifyToken } from "../utils/jwt.js";
-
 export function authMiddleware(req, res, next) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader) {
+  if (!req.session?.user?.id) {
     return res.sendStatus(401);
   }
 
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const payload = verifyToken(token);
-
-    req.user = payload;
-
-    next();
-  } catch {
-    return res.sendStatus(401);
-  }
+  req.user = req.session.user;
+  next();
 }
 
 

@@ -1,4 +1,5 @@
 import express from "express";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 import {
   bookAppointment,
   getAppointmentById,
@@ -9,6 +10,8 @@ import {
 } from "../controllers/appointments.controller.js";
 
 const appointmentRoutes = express.Router();
+
+appointmentRoutes.use(authMiddleware);
 
 appointmentRoutes.get("/", getAllAppointments)
 appointmentRoutes.post("/", bookAppointment);

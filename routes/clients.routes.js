@@ -1,7 +1,10 @@
 import express from "express";
 import * as ClientController from "../controllers/clients.controller.js";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const clientRoutes = express.Router();
+
+clientRoutes.use(authMiddleware);
 
 clientRoutes.get("/", ClientController.getAllClients);
 clientRoutes.get("/:id", ClientController.getClientById);

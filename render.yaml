@@ -13,7 +13,7 @@ services:
         value: "true"
       - key: DB_SSL_REJECT_UNAUTHORIZED
         value: "false"
-      - key: JWT_SECRET
+      - key: SESSION_SECRET
         sync: false
       - key: FE_ORIGIN
         sync: false

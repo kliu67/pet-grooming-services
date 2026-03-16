@@ -4,6 +4,10 @@ import express from "express";
 import weightClassRoutes from "../weightClasses.routes.js";
 import * as WeightClass from "../../models/weightClasses.model.js";
 
+vi.mock("../../middleware/auth.middleware.js", () => ({
+  authMiddleware: (_req, _res, next) => next(),
+}));
+
 /* ---------------- Mock Model ---------------- */
 vi.mock("../../models/weightClasses.model.js");
 
