@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-import { pool, initDb } from "./db.js";
+import { initDb } from "./db.js";
 import clientRoutes from "./routes/clients.routes.js";
 import serviceRoutes from "./routes/services.routes.js"
 import petRoutes from "./routes/pets.routes.js";
@@ -25,12 +25,12 @@ dotenv.config();
 export const app = express(); // export the app itself
 
 const PORT = process.env.PORT || 3000;
-const FE_PORT = process.env.FEPORT || 5173;
+const FE_PORT = process.env.FE_PORT || 5173;
 const FE_ORIGIN = process.env.FE_ORIGIN || `http://localhost:${FE_PORT}`;
 
 app.use(cors({
-  origin: FE_ORIGIN, // your frontend
-    credentials: true,
+  origin: FE_ORIGIN,
+  credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
@@ -38,9 +38,16 @@ app.use(errorHandler);
 
 
 if (process.env.NODE_ENV !== "test") {
-  initDb().then(() => {
-    app.listen(PORT, () => console.log(`Backend running at ${FE_ORIGIN}`));
-  });
+  initDb()
+    .then(() => {
+      app.listen(PORT, () =>
+        console.log(`Backend running at http://localhost:${PORT}`)
+      );
+    })
+    .catch((err) => {
+      console.error("Failed to start backend:", err);
+      process.exit(1);
+    });
 }
 
 app.get("/api/health", (req, res) => {
