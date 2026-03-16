@@ -6,6 +6,8 @@ const authRoutes = express.Router();
 authRoutes.post("/login", validateLogin, authController.login);
 authRoutes.post("/refresh", authController.refresh);
 authRoutes.post("/logout", authController.logout);
+authRoutes.get("/me", authController.me);
+
 
 
 export default authRoutes;

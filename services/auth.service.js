@@ -1,8 +1,11 @@
 import bcrypt from "bcrypt";
 import { pool } from "../db.js";
 import { createAccessToken } from "../utils/jwt.js";
-import { verifyRefreshToken, generateRefreshToken, rotateRefreshToken } from "../utils/tokens.js";
-
+import {
+  verifyRefreshToken,
+  generateRefreshToken,
+  rotateRefreshToken,
+} from "../utils/tokens.js";
 
 export async function signup(email, password) {
   const hash = await bcrypt.hash(password, 10);
@@ -77,9 +80,31 @@ export async function refresh(refreshToken) {
 }
 
 export async function logout(refreshToken) {
-  if(!refreshToken) return;
-  await pool.query(
-    `DELETE FROM refresh_tokens WHERE token_hash = $1`,
-    [refreshToken]
-  );
+  if (!refreshToken) return;
+  await pool.query(`DELETE FROM refresh_tokens WHERE token_hash = $1`, [
+    refreshToken,
+  ]);
+}
+
+export async function verifyCredentials(email, password) {
+  const result = await pool.query(`SELECT * FROM users WHERE email=$1`, [
+    email,
+  ]);
+
+  const user = result.rows[0];
+  if (!user) throw new Error("Invalid credentials");
+
+  const valid = await bcrypt.compare(password, user.password_hash);
+  if (!valid) throw new Error("Invalid credentials");
+
+  // return only safe fields
+  return {
+    id: user.id,
+    email: user.email,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    phone: user.phone,
+    role: user.role,
+    last_login_at: user.last_login_at,
+  };
 }

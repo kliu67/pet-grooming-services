@@ -1,23 +1,37 @@
 import * as authService from "../services/auth.service.js";
-import {SECURE} from "../utils/constants.js"
-export async function login(req, res){
-    try{
-        const {email, password } = req.body;
-        const {user, accessToken, refreshToken } = await authService.login(email, password);
 
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: false,
-            sameSite: "lax",
-            path: "/auth/refresh"
-        });
-
-        res.json({ user, accessToken, refreshToken });
-    } catch (err) {
-        res.status(401).json({
-            error: err.message
-        });
-    }
+export function me(req, res) {
+  if (!req.session?.user) return res.sendStatus(401);
+    const expiresAt = req.session.cookie?.expires || null;
+  res.json({ user: req.session.user,
+    sessionExpiresAt: expiresAt
+   });
+}
+export async function login(req, res) {
+  try {
+    const { email, password } = req.body;
+    const user = await authService.verifyCredentials(email, password);
+    req.session.user = {
+      id: user.id,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      role: user.role,
+      phone: user.phone,
+      last_login_at: user.last_login_at
+    };
+    res.json({ user: req.session.user });
+  } catch (err) {
+    res.status(401).json({
+      error: err.message,
+    });
+  }
+}
+export function logout(req, res) {
+  req.session.destroy(() => {
+    res.clearCookie("connect.sid"); // default session cookie name
+    res.sendStatus(204);
+  });
 }
 
 export async function refresh(req, res) {
@@ -39,22 +53,4 @@ export async function refresh(req, res) {
   } catch (err) {
     res.status(401).json({ error: err.message });
   }
-}
-
-export async function logout(req, res) {
-    try{
-        const refreshToken = req.cookies?.refreshToken;
-
-        await authService.logout(refreshToken);
-        res.clearCookie("refreshToken", {
-            httpOnly: true,
-            secure: SECURE,
-            sameSite: "strict",
-            path: "/auth/refresh"
-        })
-
-        res.sendStatus(204);
-    } catch (err) {
-        res.status(500).json({error: err.message });
-    }
 }
