@@ -47,7 +47,8 @@ app.use(
     saveUninitialized: false,
     store: new PgStore({
       pool,
-      createTableIfMissing: true,
+      tableName: "user_sessions",
+      createTableIfMissing: false,
     }),
     cookie: {
       httpOnly: true,
