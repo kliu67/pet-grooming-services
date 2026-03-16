@@ -26,9 +26,10 @@ export const app = express(); // export the app itself
 
 const PORT = process.env.PORT || 3000;
 const FE_PORT = process.env.FEPORT || 5173;
+const FE_ORIGIN = process.env.FE_ORIGIN || `http://localhost:${FE_PORT}`;
 
 app.use(cors({
-  origin: `http://localhost:${FE_PORT}`, // your frontend
+  origin: FE_ORIGIN, // your frontend
     credentials: true,
 }));
 app.use(express.json());
@@ -36,13 +37,9 @@ app.use(cookieParser());
 app.use(errorHandler);
 
 
-// Initialize DB
-// initDb().then(() => console.log("Postgres ready"));
-
 if (process.env.NODE_ENV !== "test") {
   initDb().then(() => {
-    app.listen(PORT, () => console.log("Postgres ready"));
-    app.listen(PORT, () => console.log(`Backend running at http://localhost:${PORT}`));
+    app.listen(PORT, () => console.log(`Backend running at ${FE_ORIGIN}`));
   });
 }
 
