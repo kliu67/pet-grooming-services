@@ -12,7 +12,7 @@ const petRoute = express.Router();
 
 /* Get all pets */
 petRoute.get("/", getAllPets);
-/* Get all pets for a user */
+/* Get all pets for a client */
 petRoute.get("/owner/:ownerId", getPetsByOwner);
 
 /* Get pet by id */

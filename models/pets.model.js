@@ -25,7 +25,7 @@ function validateId(id) {
 /* ----------------------------- queries ----------------------------- */
 
 /**
- * Get all pets for a user
+ * Get all pets for a client
  */
 export async function findAll() {
   const { rows } = await pool.query(

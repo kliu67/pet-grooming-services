@@ -29,13 +29,22 @@ async function runMigration(file) {
     "utf-8"
   );
 
-  console.log(`Running migration: ${file}`);
-  await pool.query(sql);
-
-  await pool.query(
-    `INSERT INTO schema_migrations (version) VALUES ($1)`,
-    [file]
-  );
+  const client = await pool.connect();
+  try {
+    console.log(`Running migration: ${file}`);
+    await client.query("BEGIN");
+    await client.query(sql);
+    await client.query(
+      `INSERT INTO schema_migrations (version) VALUES ($1)`,
+      [file]
+    );
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function migrate() {

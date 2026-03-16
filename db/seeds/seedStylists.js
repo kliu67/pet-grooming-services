@@ -14,7 +14,7 @@ const pool = new Pool({
   port: Number(process.env.DB_PORT)
 });
 
-async function seedUsers() {
+async function seedStylists() {
     try {
         const filePath = path.resolve("db/seeds/stylists.json");
         const raw = await fs.readFile(filePath, "utf-8");
@@ -41,4 +41,4 @@ async function seedUsers() {
       }
     }
     
-    seedUsers();
+    seedStylists();

@@ -1,5 +1,5 @@
 import { pool } from "../db.js";
-import { isValidEmail, isValidPhone } from "../validators/user.validator.js";
+import { isValidEmail, isValidPhone } from "../validators/client.validator.js";
 import { isIdValidNumeric, validateNumericId } from "../validators/validator.js";
 import { MAX_NAME_LENGTH } from "../utils/constants.js";
 
