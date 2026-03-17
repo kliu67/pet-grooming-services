@@ -8,32 +8,44 @@ if (process.env.NODE_ENV === "test") {
 }
 const { Pool } = pg;
 
-// export const pool = new Pool({
-//     connectionString: process.env.DATABASE_URL,
-// });
+function getSslConfig() {
+  const sslMode = process.env.DB_SSL_MODE;
+  const sslEnabled = process.env.DB_SSL === "true" || sslMode === "require";
 
-// export const pool = new Pool({
-//   host: process.env.DB_HOST,
-//   user: process.env.DB_USER,
-//   password: process.env.DB_PASSWORD,
-//   database: process.env.DB_NAME,
-//   port: Number(process.env.DB_PORT),
-//   ssl: {
-//     rejectUnauthorized: false // required for RDS
-//   }
-// });
+  if (!sslEnabled) {
+    return undefined;
+  }
 
-//use this for public connections
-export const pool = new Pool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: Number(process.env.DB_PORT)
-  // ssl: {
-  //   rejectUnauthorized: false // required for RDS
-  // }
-});
+  return {
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === "true",
+  };
+}
+
+function getPoolConfig() {
+  const ssl = getSslConfig();
+  const databaseUrl = process.env.DATABASE_URL;
+  const hasConnectionString =
+    typeof databaseUrl === "string" &&
+    /^(postgres|postgresql):\/\//.test(databaseUrl);
+
+  if (hasConnectionString) {
+    return {
+      connectionString: databaseUrl,
+      ...(ssl ? { ssl } : {}),
+    };
+  }
+
+  return {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: Number(process.env.DB_PORT),
+    ...(ssl ? { ssl } : {}),
+  };
+}
+
+export const pool = new Pool(getPoolConfig());
 
 export async function initDb() {
 

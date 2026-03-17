@@ -1,4 +1,5 @@
 import express from "express";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 import {
   getAllPets,
   getPetsByOwner,
@@ -9,6 +10,8 @@ import {
 } from "../controllers/pets.controller.js";
 
 const petRoute = express.Router();
+
+petRoute.use(authMiddleware);
 
 /* Get all pets */
 petRoute.get("/", getAllPets);
@@ -22,7 +25,7 @@ petRoute.get("/:id", getPetById);
 petRoute.post("/", createPet);
 
 /* Update pet (partial) */
-petRoute.patch("/:id", updatePet);
+petRoute.put("/:id", updatePet);
 
 /* Delete pet */
 petRoute.delete("/:id", deletePet);

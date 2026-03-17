@@ -4,6 +4,10 @@ import express from "express";
 import serviceRoutes from "../services.routes.js";
 import * as Service from "../../models/services.model.js";
 
+vi.mock("../../middleware/auth.middleware.js", () => ({
+  authMiddleware: (_req, _res, next) => next(),
+}));
+
 // Mock the entire service model
 vi.mock("../../models/services.model.js");
 

@@ -1,4 +1,5 @@
 import express from "express";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 import {
   bookAppointment,
   getAppointmentById,
@@ -10,11 +11,13 @@ import {
 
 const appointmentRoutes = express.Router();
 
+appointmentRoutes.use(authMiddleware);
+
 appointmentRoutes.get("/", getAllAppointments)
 appointmentRoutes.post("/", bookAppointment);
 appointmentRoutes.get("/:id", getAppointmentById);
 appointmentRoutes.patch("/:id/cancel", cancelAppointment);
-appointmentRoutes.patch("/:id/update", updateAppointment);
+appointmentRoutes.put("/:id", updateAppointment);
 appointmentRoutes.delete("/:id", deleteAppointment);
 
 export default appointmentRoutes;

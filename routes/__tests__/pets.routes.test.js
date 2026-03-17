@@ -4,6 +4,10 @@ import express from "express";
 import petRoutes from "../pets.routes.js";
 import * as Pet from "../../models/pets.model.js";
 
+vi.mock("../../middleware/auth.middleware.js", () => ({
+  authMiddleware: (_req, _res, next) => next(),
+}));
+
 /* -------------------- Mock Model -------------------- */
 vi.mock("../../models/pets.model.js");
 
@@ -119,9 +123,9 @@ describe("Pet Routes", () => {
   });
 
   /* =====================================================
-     PATCH /pets/:id
+     PUT /pets/:id
   ===================================================== */
-  describe("PATCH /pets/:id", () => {
+  describe("PUT /pets/:id", () => {
     it("updates a pet", async () => {
       const updatedPet = {
         id: 1,
@@ -133,7 +137,7 @@ describe("Pet Routes", () => {
       Pet.update.mockResolvedValue(updatedPet);
 
       const res = await request(app)
-        .patch("/pets/1")
+        .put("/pets/1")
         .send({ name: "Buddy Updated" });
 
       expect(res.status).toBe(200);
@@ -147,7 +151,7 @@ describe("Pet Routes", () => {
       Pet.update.mockRejectedValue(new Error("pet not found"));
 
       const res = await request(app)
-        .patch("/pets/1")
+        .put("/pets/1")
         .send({ name: "New" });
 
       expect(res.status).toBe(404);
@@ -159,7 +163,7 @@ describe("Pet Routes", () => {
       );
 
       const res = await request(app)
-        .patch("/pets/1")
+        .put("/pets/1")
         .send({});
 
       expect(res.status).toBe(400);
