@@ -158,7 +158,7 @@ describe("Appointment Routes", () => {
     });
   });
 
-  describe("PATCH /appointments/:id/update", () => {
+  describe("PUT /appointments/:id", () => {
     it("updates appointment", async () => {
       const updated = {
         id: 1,
@@ -169,7 +169,7 @@ describe("Appointment Routes", () => {
       Appointment.update.mockResolvedValue(updated);
 
       const res = await request(app)
-        .patch("/appointments/1/update")
+        .put("/appointments/1")
         .send({ startTime: "2026-01-01T12:00:00Z" });
 
       expect(res.status).toBe(200);
@@ -182,8 +182,8 @@ describe("Appointment Routes", () => {
       );
 
       const res = await request(app)
-        .patch("/appointments/1/update")
-        .send({ start_time: "2026-01-01T12:00:00Z" });
+        .put("/appointments/1")
+        .send({ startTime: "2026-01-01T12:00:00Z" });
 
       expect(res.status).toBe(409);
     });
@@ -194,8 +194,8 @@ describe("Appointment Routes", () => {
       );
 
       const res = await request(app)
-        .patch("/appointments/1/update")
-        .send({ start_time: "2026-01-01T12:00:00Z" });
+        .put("/appointments/1")
+        .send({ startTime: "2026-01-01T12:00:00Z" });
 
       expect(res.status).toBe(409);
       expect(res.body.error).toContain("stylist is not available");
@@ -207,8 +207,8 @@ describe("Appointment Routes", () => {
       );
 
       const res = await request(app)
-        .patch("/appointments/1/update")
-        .send({ start_time: "2026-01-01T12:00:00Z" });
+        .put("/appointments/1")
+        .send({ startTime: "2026-01-01T12:00:00Z" });
 
       expect(res.status).toBe(409);
       expect(res.body.error).toContain("stylist is not available");
@@ -218,8 +218,8 @@ describe("Appointment Routes", () => {
       Appointment.update.mockRejectedValue(new Error("invalid start_time"));
 
       const res = await request(app)
-        .patch("/appointments/1/update")
-        .send({ start_time: "bad" });
+        .put("/appointments/1")
+        .send({ startTime: "bad" });
 
       expect(res.status).toBe(400);
     });

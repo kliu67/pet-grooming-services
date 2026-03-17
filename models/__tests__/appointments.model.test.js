@@ -255,7 +255,7 @@ describe("book()", () => {
       service_id: 1,
       service_configuration_id: 10,
       stylist_id: 2,
-      start_time: FUTURE_START,
+      startTime: FUTURE_START,
     });
 
     expect(result).toEqual({ id: 99, status: "booked" });
@@ -299,7 +299,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START,
+        startTime: FUTURE_START,
       }),
     ).rejects.toThrow("invalid client, pet, stylist, or service configuration");
   });
@@ -316,7 +316,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START,
+        startTime: FUTURE_START,
       }),
     ).rejects.toThrow("pet not found");
   });
@@ -333,7 +333,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START,
+        startTime: FUTURE_START,
       }),
     ).rejects.toThrow("pet does not belong to client");
   });
@@ -351,7 +351,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START,
+        startTime: FUTURE_START,
       }),
     ).rejects.toThrow("stylist not found");
   });
@@ -370,7 +370,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START,
+        startTime: FUTURE_START,
       }),
     ).rejects.toThrow("client not found");
   });
@@ -395,7 +395,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: FUTURE_START,
+        startTime: FUTURE_START,
       }),
     ).rejects.toThrow("service configuration not found");
   });
@@ -408,7 +408,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: "2000-01-01T00:00:00.000Z",
+        startTime: "2000-01-01T00:00:00.000Z",
       }),
     ).rejects.toThrow(/cannot be in the past/);
 
@@ -447,7 +447,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: new Date("2028-03-06 05:00:00.000 -0500"),
+        startTime: new Date("2028-03-06 05:00:00.000 -0500"),
       }),
     ).rejects.toThrow(
       "appointment start time is earlier than stylist 2's available window",
@@ -495,7 +495,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: new Date(FUTURE_START).setHours(18, 0, 0),
+        startTime: new Date(FUTURE_START).setHours(18, 0, 0),
       }),
     ).rejects.toThrow(
       "appointment end time is later than stylist 2's available window",
@@ -540,7 +540,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: start,
+        startTime: start,
       }),
     ).rejects.toThrow(
       "appointment time overlaps with stylist 2's time off window",
@@ -585,7 +585,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        start_time: start,
+        startTime: start,
       }),
     ).rejects.toThrow("start time and end time must be on the same day");
     expect(mockRelease).toHaveBeenCalled();

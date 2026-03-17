@@ -17,7 +17,7 @@ appointmentRoutes.get("/", getAllAppointments)
 appointmentRoutes.post("/", bookAppointment);
 appointmentRoutes.get("/:id", getAppointmentById);
 appointmentRoutes.patch("/:id/cancel", cancelAppointment);
-appointmentRoutes.patch("/:id/update", updateAppointment);
+appointmentRoutes.put("/:id", updateAppointment);
 appointmentRoutes.delete("/:id", deleteAppointment);
 
 export default appointmentRoutes;
