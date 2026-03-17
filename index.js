@@ -21,15 +21,18 @@ import { errorHandler } from "./middleware/error.middleware.js";
 
 dotenv.config();
 
-export const app = express(); // export the app itself
+export const app = express();
 
 const PORT = process.env.PORT || 3000;
 const FE_PORT = process.env.FEPORT || 5173;
-const FE_ORIGIN = process.env.FRONTEND_ORIGIN || `http://localhost:${FE_PORT}`; // e.g. https://app.yourdomain.com
 const isProd = process.env.NODE_ENV === "production";
-if (isProd && !process.env.FRONTEND_ORIGIN) {
+const FE_ORIGIN =
+  process.env.FE_ORIGIN || `http://localhost:${FE_PORT}`;
+
+if (isProd && !process.env.FE_ORIGIN) {
   throw new Error("FRONTEND_ORIGIN is required in production");
 }
+
 const PgSession = connectPgSimple(session);
 app.set("trust proxy", 1);
 
@@ -42,10 +45,10 @@ app.use(
   }),
 );
 
+app.options(/.*/, cors({ origin: FE_ORIGIN, credentials: true }));
+
 app.use(express.json());
 app.use(cookieParser());
-
-app.options("*", cors({ origin: FE_ORIGIN, credentials: true }));
 
 app.use(
   session({
@@ -66,9 +69,6 @@ app.use(
   }),
 );
 
-// Initialize DB
-// initDb().then(() => console.log("Postgres ready"));
-
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
@@ -85,12 +85,8 @@ app.use("/api/availability", stylistAvailabilityRoutes);
 app.use("/api/timeOffs", stylistTimeOffRoutes);
 app.use("/api/users", userRoutes);
 app.use("/auth", authRoutes);
-app.use(errorHandler);
 
-// app.use((err, req, res, next) => {
-//   console.error(err);
-//   res.status(500).json({ error: "Internal server error" });
-// });
+app.use(errorHandler);
 
 if (process.env.NODE_ENV !== "test") {
   initDb().then(() => {
