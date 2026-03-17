@@ -94,7 +94,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/clients", clientRoutes);
-app.use("/services", serviceRoutes);
+app.use("/api/services", serviceRoutes);
 app.use("/api/pets", petRoutes);
 app.use("/api/breeds", breedsRoutes);
 app.use("/api/weightClasses", weightClassRoutes);
