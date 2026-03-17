@@ -25,7 +25,7 @@ petRoute.get("/:id", getPetById);
 petRoute.post("/", createPet);
 
 /* Update pet (partial) */
-petRoute.patch("/:id", updatePet);
+petRoute.put("/:id", updatePet);
 
 /* Delete pet */
 petRoute.delete("/:id", deletePet);

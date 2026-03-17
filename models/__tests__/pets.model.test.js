@@ -122,7 +122,7 @@ it("handles invalid weight class FK", async () => {
       name: "Buddy",
       breed: 1,
       owner: 1,
-      weightClassId: 999,
+      weight_class_id: 999,
     })
   ).rejects.toThrow("Invalid weight class");
 });
