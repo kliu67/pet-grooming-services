@@ -28,15 +28,31 @@ export const app = express(); // export the app itself
 
 const PORT = process.env.PORT || 3000;
 const FE_PORT = process.env.FE_PORT || 5173;
-const FE_ORIGIN = process.env.FE_ORIGIN || `http://localhost:${FE_PORT}`;
+const defaultOrigin = `http://localhost:${FE_PORT}`;
+const allowedOrigins = (
+  process.env.FE_ORIGINS ||
+  process.env.FE_ORIGIN ||
+  defaultOrigin
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const isProduction = process.env.NODE_ENV === "production";
 const PgStore = connectPgSimple(session);
 
 app.set("trust proxy", 1);
-app.use(cors({
-  origin: FE_ORIGIN,
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use(
