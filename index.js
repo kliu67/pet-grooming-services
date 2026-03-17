@@ -1,6 +1,4 @@
 import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -8,28 +6,25 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { initDb, pool } from "./db.js";
 import clientRoutes from "./routes/clients.routes.js";
-import serviceRoutes from "./routes/services.routes.js";
+import serviceRoutes from "./routes/services.routes.js"
 import petRoutes from "./routes/pets.routes.js";
 import breedsRoutes from "./routes/breeds.routes.js";
-import weightClassRoutes from "./routes/weightClasses.routes.js";
-import serviceConfigurationRoutes from "./routes/serviceConfigurations.routes.js";
-import appointmentRoutes from "./routes/appointments.routes.js";
-import stylistRoutes from "./routes/stylists.routes.js";
-import stylistAvailabilityRoutes from "./routes/stylistAvailability.routes.js";
-import stylistTimeOffRoutes from "./routes/stylistTimeOff.routes.js";
-import userRoutes from "./routes/users.routes.js";
-import authRoutes from "./routes/auth.routes.js";
+import weightClassRoutes from "./routes/weightClasses.routes.js"
+import serviceConfigurationRoutes from "./routes/serviceConfigurations.routes.js"
+import appointmentRoutes from "./routes/appointments.routes.js"
+import stylistRoutes from "./routes/stylists.routes.js"
+import stylistAvailabilityRoutes from "./routes/stylistAvailability.routes.js"
+import stylistTimeOffRoutes from "./routes/stylistTimeOff.routes.js"
+import userRoutes from "./routes/users.routes.js"
+import authRoutes from "./routes/auth.routes.js"
 
 import { errorHandler } from "./middleware/error.middleware.js";
+
+
 
 dotenv.config();
 
 export const app = express(); // export the app itself
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const buildDir = path.join(__dirname, "dist"); // or "build" if CRA
-app.use(express.static(buildDir));
 
 const PORT = process.env.PORT || 3000;
 const FE_PORT = process.env.FE_PORT || 5173;
@@ -55,7 +50,7 @@ app.use(
 
       return callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
-    credentials: true
+    credentials: true,
   })
 );
 app.use(express.json());
@@ -69,16 +64,17 @@ app.use(
     store: new PgStore({
       pool,
       tableName: "user_sessions",
-      createTableIfMissing: false
+      createTableIfMissing: false,
     }),
     cookie: {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? "none" : "lax",
-      maxAge: 1000 * 60 * 60 * 24 * 7
-    }
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    },
   })
 );
+
 
 if (process.env.NODE_ENV !== "test") {
   initDb()
@@ -92,7 +88,6 @@ if (process.env.NODE_ENV !== "test") {
       process.exit(1);
     });
 }
-
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
@@ -110,9 +105,7 @@ app.use("/api/availability", stylistAvailabilityRoutes);
 app.use("/api/timeOffs", stylistTimeOffRoutes);
 app.use("/api/users", userRoutes);
 app.use("/auth", authRoutes);
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(buildDir, "index.html"));
-});
+
 app.use(errorHandler);
 
 app.use((err, req, res, next) => {
@@ -120,9 +113,5 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
-process.on("unhandledRejection", (err) =>
-  console.error("Unhandled Rejection:", err)
-);
-process.on("uncaughtException", (err) =>
-  console.error("Uncaught Exception:", err)
-);
+process.on("unhandledRejection", (err) => console.error("Unhandled Rejection:", err));
+process.on("uncaughtException", (err) => console.error("Uncaught Exception:", err));
