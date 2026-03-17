@@ -35,10 +35,7 @@
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-<<<<<<< HEAD
     "jsonwebtoken": "^9.0.3",
-=======
->>>>>>> 08bde42d39396a7bd834fbdf50ed97ab11ca932c
     "pg": "^8.18.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",

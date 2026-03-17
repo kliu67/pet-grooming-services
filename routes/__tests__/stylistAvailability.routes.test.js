@@ -4,10 +4,6 @@ import express from "express";
 import routes from "../stylistAvailability.routes.js";
 import * as Model from "../../models/stylistAvailability.model.js";
 
-vi.mock("../../middleware/auth.middleware.js", () => ({
-  authMiddleware: (_req, _res, next) => next(),
-}));
-
 vi.mock("../../models/stylistAvailability.model.js");
 
 const app = express();

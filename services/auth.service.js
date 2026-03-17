@@ -1,15 +1,11 @@
 import bcrypt from "bcrypt";
 import { pool } from "../db.js";
-<<<<<<< HEAD
 import { createAccessToken } from "../utils/jwt.js";
 import {
   verifyRefreshToken,
   generateRefreshToken,
   rotateRefreshToken,
 } from "../utils/tokens.js";
-=======
-
->>>>>>> 08bde42d39396a7bd834fbdf50ed97ab11ca932c
 
 export async function signup(email, password) {
   const hash = await bcrypt.hash(password, 10);
@@ -37,6 +33,15 @@ export async function login(email, password) {
 
   if (!valid) throw new Error("Invalid credentials");
 
+  const accessToken = createAccessToken(user.id);
+  const refreshToken = generateRefreshToken();
+
+  await pool.query(
+    `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+    VALUES ($1, $2, now() + interval '7 days')`,
+    [user.id, refreshToken],
+  );
+
   let updateUserRes = await pool.query(
     `UPDATE users
       SET last_login_at = NOW()
@@ -46,9 +51,8 @@ export async function login(email, password) {
   );
 
   const last_login_at = updateUserRes?.rows[0]?.last_login_at;
-  const { id, first_name, last_name, phone, role } = user;
+  const { first_name, last_name, phone, role } = user;
   user = {
-    id,
     first_name,
     last_name,
     email,
@@ -57,10 +61,13 @@ export async function login(email, password) {
     last_login_at,
   };
 
-  return user;
+  return {
+    user,
+    accessToken,
+    refreshToken,
+  };
 }
 
-<<<<<<< HEAD
 export async function refresh(refreshToken) {
   const userId = await verifyRefreshToken(refreshToken); // validate in DB
 
@@ -100,15 +107,4 @@ export async function verifyCredentials(email, password) {
     role: user.role,
     last_login_at: user.last_login_at,
   };
-=======
-export async function getSessionUser(userId) {
-  const result = await pool.query(
-    `SELECT id, email, phone, first_name, last_name, role, last_login_at
-     FROM users
-     WHERE id = $1`,
-    [userId]
-  );
-
-  return result.rows[0] ?? null;
->>>>>>> 08bde42d39396a7bd834fbdf50ed97ab11ca932c
 }

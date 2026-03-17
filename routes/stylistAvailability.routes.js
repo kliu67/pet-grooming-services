@@ -1,5 +1,4 @@
 import express from "express";
-import { authMiddleware } from "../middleware/auth.middleware.js";
 import {
   getAllStylistAvailability,
   getStylistAvailabilityById,
@@ -10,8 +9,6 @@ import {
 } from "../controllers/stylistAvailability.controller.js";
 
 const stylistAvailabilityRoutes = express.Router();
-
-stylistAvailabilityRoutes.use(authMiddleware);
 
 stylistAvailabilityRoutes.get("/", getAllStylistAvailability);
 stylistAvailabilityRoutes.get("/:id", getStylistAvailabilityById);

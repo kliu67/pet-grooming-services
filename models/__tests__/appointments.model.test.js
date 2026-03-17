@@ -28,11 +28,7 @@ import {
 
 const FUTURE_START = "2099-01-01T15:00:00.000Z";
 const NEAR_MIDNIGHT_START = "2028-03-01 23:00:00.000 -500";
-<<<<<<< HEAD
 const TIMEOFF_OVERLAP_START = "2099-03-15 09:00:00.000 -0500";
-=======
-const TIMEOFF_OVERLAP_START = "2028-03-10 09:00:00.000 -0500";
->>>>>>> 08bde42d39396a7bd834fbdf50ed97ab11ca932c
 
 const availabilityRows = [
   {
@@ -72,13 +68,8 @@ const timeOffRows = [
 
   {
     stylist_id: 2,
-<<<<<<< HEAD
     start_datetime: "2099-03-15 00:00:00.000 -0500",
     end_datetime: "2099-03-15 12:00:00.000 -0500",
-=======
-    start_datetime: "2028-03-10 00:00:00.000 -0500",
-    end_datetime: "2028-03-10 12:00:00.000 -0500",
->>>>>>> 08bde42d39396a7bd834fbdf50ed97ab11ca932c
     reason: "Dentist appointment",
   },
 
@@ -264,7 +255,7 @@ describe("book()", () => {
       service_id: 1,
       service_configuration_id: 10,
       stylist_id: 2,
-      startTime: FUTURE_START,
+      start_time: FUTURE_START,
     });
 
     expect(result).toEqual({ id: 99, status: "booked" });
@@ -308,7 +299,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: FUTURE_START,
+        start_time: FUTURE_START,
       }),
     ).rejects.toThrow("invalid client, pet, stylist, or service configuration");
   });
@@ -325,7 +316,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: FUTURE_START,
+        start_time: FUTURE_START,
       }),
     ).rejects.toThrow("pet not found");
   });
@@ -342,7 +333,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: FUTURE_START,
+        start_time: FUTURE_START,
       }),
     ).rejects.toThrow("pet does not belong to client");
   });
@@ -360,7 +351,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: FUTURE_START,
+        start_time: FUTURE_START,
       }),
     ).rejects.toThrow("stylist not found");
   });
@@ -379,7 +370,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: FUTURE_START,
+        start_time: FUTURE_START,
       }),
     ).rejects.toThrow("client not found");
   });
@@ -404,7 +395,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: FUTURE_START,
+        start_time: FUTURE_START,
       }),
     ).rejects.toThrow("service configuration not found");
   });
@@ -417,7 +408,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: "2000-01-01T00:00:00.000Z",
+        start_time: "2000-01-01T00:00:00.000Z",
       }),
     ).rejects.toThrow(/cannot be in the past/);
 
@@ -456,7 +447,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: new Date("2028-03-06 05:00:00.000 -0500"),
+        start_time: new Date("2028-03-06 05:00:00.000 -0500"),
       }),
     ).rejects.toThrow(
       "appointment start time is earlier than stylist 2's available window",
@@ -504,7 +495,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: new Date(FUTURE_START).setHours(18, 0, 0),
+        start_time: new Date(FUTURE_START).setHours(18, 0, 0),
       }),
     ).rejects.toThrow(
       "appointment end time is later than stylist 2's available window",
@@ -549,7 +540,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: start,
+        start_time: start,
       }),
     ).rejects.toThrow(
       "appointment time overlaps with stylist 2's time off window",
@@ -594,7 +585,7 @@ describe("book()", () => {
         service_id: 1,
         service_configuration_id: 10,
         stylist_id: 2,
-        startTime: start,
+        start_time: start,
       }),
     ).rejects.toThrow("start time and end time must be on the same day");
     expect(mockRelease).toHaveBeenCalled();

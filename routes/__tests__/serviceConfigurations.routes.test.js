@@ -4,10 +4,6 @@ import express from "express";
 import configRoutes from "../serviceConfigurations.routes.js";
 import * as Config from "../../models/serviceConfigurations.model.js";
 
-vi.mock("../../middleware/auth.middleware.js", () => ({
-  authMiddleware: (_req, _res, next) => next(),
-}));
-
 /* ---------------- Mock Model ---------------- */
 vi.mock("../../models/serviceConfigurations.model.js");
 
@@ -22,45 +18,48 @@ describe("Service Configuration Routes", () => {
   });
 
   /* =====================================================
-     GET /service-configurations
+     GET /service-configurations (composite key)
   ===================================================== */
   describe("GET /service-configurations", () => {
-    it("returns all configurations", async () => {
-      const mockConfigs = [
-        {
-          breed_id: 1,
-          service_id: 2,
-          weight_class_id: 3,
-          price: 50,
-          duration_minutes: 60,
-          is_active: true,
-        },
-      ];
+    it("returns configuration", async () => {
+      const mockConfig = {
+        breed_id: 1,
+        service_id: 2,
+        weight_class_id: 3,
+        price: 50,
+        duration_minutes: 60,
+        is_active: true,
+      };
 
-      Config.findAll.mockResolvedValue(mockConfigs);
+      Config.findOne.mockResolvedValue(mockConfig);
 
-      const res = await request(app).get("/service-configurations");
-
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual(mockConfigs);
-      expect(Config.findAll).toHaveBeenCalled();
-    });
-
-    it("returns empty array when no configurations exist", async () => {
-      Config.findAll.mockResolvedValue([]);
-
-      const res = await request(app).get("/service-configurations");
+      const res = await request(app).get(
+        "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
+      );
 
       expect(res.status).toBe(200);
-      expect(res.body).toEqual([]);
+      expect(res.body).toEqual(mockConfig);
+      expect(Config.findOne).toHaveBeenCalledWith("1", "2", "3");
     });
 
-    it("returns 500 when listing configurations fails", async () => {
-      Config.findAll.mockRejectedValue(new Error("DB error"));
+    it("returns 404 if not found", async () => {
+      Config.findOne.mockResolvedValue(null);
 
-      const res = await request(app).get("/service-configurations");
+      const res = await request(app).get(
+        "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
+      );
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 400 for invalid input", async () => {
+      Config.findOne.mockRejectedValue(new Error("invalid breed_id"));
+
+      const res = await request(app).get(
+        "/service-configurations?breed_id=bad&service_id=2&weight_class_id=3"
+      );
+
+      expect(res.status).toBe(400);
     });
   });
 

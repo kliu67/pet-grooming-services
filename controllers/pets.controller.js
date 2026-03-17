@@ -52,9 +52,9 @@ export async function getPetById(req, res) {
  */
 export async function createPet(req, res) {
   try {
-    const { name, breed, owner, weight_class_id } = req.body;
+    const { name, breed, owner } = req.body;
 
-    const pet = await Pet.create({ name, breed, owner, weight_class_id });
+    const pet = await Pet.create({ name, breed, owner });
     return res.status(201).json(pet);
   } catch (err) {
     if (

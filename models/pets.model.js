@@ -73,12 +73,12 @@ export async function findById(id) {
 /**
  * Create pet
  */
-export async function create({ name, breed, owner, weight_class_id }) {
+export async function create({ name, breed, owner, weightClassId }) {
   const normalizedName = normalizeName(name);
   const breedId = validateId(breed);
   const ownerId = validateId(owner);
-  if (weight_class_id) {
-    const validatedWeightClassId = validateId(weight_class_id);
+  if (weightClassId) {
+    const validatedWeightClassId = validateId(weightClassId);
 
     try {
       const weightClass = await pool.query(
@@ -103,7 +103,7 @@ export async function create({ name, breed, owner, weight_class_id }) {
       VALUES ($1, $2, $3, $4)
       RETURNING id, name, breed, owner, weight_class_id, uuid, created_at, updated_at
       `,
-      [normalizedName, breedId, ownerId, weight_class_id]
+      [normalizedName, breedId, ownerId, weightClassId]
     );
 
     return rows[0];

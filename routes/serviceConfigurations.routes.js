@@ -1,5 +1,4 @@
 import express from "express";
-import { authMiddleware } from "../middleware/auth.middleware.js";
 import {
   getConfiguration,
   getAllConfigurations,
@@ -11,13 +10,11 @@ import {
 
 const serviceConfigrationRoutes = express.Router();
 
-serviceConfigrationRoutes.use(authMiddleware);
-
 /* Get single configuration by composite key */
-// serviceConfigrationRoutes.get("/", getConfiguration);
+serviceConfigrationRoutes.get("/", getConfiguration);
 
 /* List all configurations */
-serviceConfigrationRoutes.get("/", getAllConfigurations);
+serviceConfigrationRoutes.get("/all", getAllConfigurations);
 
 /* List all configurations for a service */
 serviceConfigrationRoutes.get("/service/:serviceId", getConfigurationsByService);

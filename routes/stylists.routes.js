@@ -1,5 +1,4 @@
 import express from "express";
-import { authMiddleware } from "../middleware/auth.middleware.js";
 import {
   getAllStylists,
   getStylistById,
@@ -9,8 +8,6 @@ import {
 } from "../controllers/stylists.controller.js";
 
 const stylistRoutes = express.Router();
-
-stylistRoutes.use(authMiddleware);
 
 stylistRoutes.get("/", getAllStylists);
 stylistRoutes.get("/:id", getStylistById);

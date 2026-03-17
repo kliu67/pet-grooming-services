@@ -4,10 +4,6 @@ import express from "express";
 import routes from "../stylistTimeOff.routes.js";
 import * as Model from "../../models/stylistTimeOff.model.js";
 
-vi.mock("../../middleware/auth.middleware.js", () => ({
-  authMiddleware: (_req, _res, next) => next(),
-}));
-
 vi.mock("../../models/stylistTimeOff.model.js");
 
 const app = express();

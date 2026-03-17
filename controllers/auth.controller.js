@@ -1,5 +1,4 @@
 import * as authService from "../services/auth.service.js";
-<<<<<<< HEAD
 
 export function me(req, res) {
   if (!req.session?.user) return res.sendStatus(401);
@@ -32,102 +31,26 @@ export function logout(req, res) {
   req.session.destroy(() => {
     res.clearCookie("connect.sid"); // default session cookie name
     res.sendStatus(204);
-=======
-function regenerateSession(req) {
-  return new Promise((resolve, reject) => {
-    req.session.regenerate((err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve();
-    });
->>>>>>> 08bde42d39396a7bd834fbdf50ed97ab11ca932c
   });
 }
 
-function saveSession(req) {
-  return new Promise((resolve, reject) => {
-    req.session.save((err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve();
-    });
-  });
-}
-
-function destroySession(req) {
-  return new Promise((resolve, reject) => {
-    req.session.destroy((err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve();
-    });
-  });
-}
-
-export async function login(req, res){
-  try{
-    const {email, password } = req.body;
-    const user = await authService.login(email, password);
-
-    await regenerateSession(req);
-    req.session.user = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    };
-    await saveSession(req);
-
-    res.json({ user });
-  } catch (err) {
-    res.status(401).json({
-      error: err.message
-    });
-  }
-}
-
-export async function me(req, res) {
+export async function refresh(req, res) {
   try {
-    const userId = req.session?.user?.id;
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) return res.sendStatus(401);
 
-    if (!userId) {
-      return res.sendStatus(401);
-    }
+    const { accessToken, newRefreshToken } =
+      await authService.refresh(refreshToken);
 
-    const user = await authService.getSessionUser(userId);
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: false, // true in production https
+      sameSite: "lax",
+      path: "/auth/refresh",
+    });
 
-    if (!user) {
-      return res.sendStatus(401);
-    }
-
-    res.json({ user });
+    res.json({ accessToken });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(401).json({ error: err.message });
   }
 }
-<<<<<<< HEAD
-=======
-
-export async function logout(req, res) {
-  try{
-    if (!req.session) {
-      return res.sendStatus(204);
-    }
-
-    await destroySession(req);
-    res.clearCookie("sid");
-
-    res.sendStatus(204);
-  } catch (err) {
-    res.status(500).json({error: err.message });
-  }
-}
->>>>>>> 08bde42d39396a7bd834fbdf50ed97ab11ca932c

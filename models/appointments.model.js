@@ -3,7 +3,13 @@ import { parseTimeToMinutes, parseDateToMinutes } from "../utils/timeRanges.js";
 import { areIntervalsOverlapping } from "date-fns";
 import { validateDescription, validateStatus } from "../validators/validator.js";
 
-
+// const DB_FIELDS = {
+//   appointments: {
+//     clientId: "client_id",
+//     petId: "pet_id",
+//     serviceId: "service_id",
+//   },
+// };
 
 function validateId(id, name = "id") {
   const n = Number(id);
@@ -505,7 +511,7 @@ export async function book({
   service_id: serviceId,
   service_configuration_id: serviceConfigurationId,
   stylist_id: stylistId,
-  startTime,
+  start_time: startTime,
   description = null,
   status = null,
 }) {
