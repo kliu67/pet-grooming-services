@@ -5,7 +5,7 @@ import { isIdValidNumeric } from  "../validators/validator.js";
 
 export async function findAll(){
     const { rows } = await pool.query(
-        `SELECT id, name, base_price, description, uuid, created_at FROM services`
+        `SELECT id, name, base_price, code, description, uuid, created_at FROM services`
     )
     return rows ?? null;
 }
@@ -50,12 +50,14 @@ export async function create({name, base_price, description}){
         throw new Error('data validation error: base_price cannot be negative');
     }
 
+    const serviceCode = name.trim().toUpperCase().replace(/\s+/g, "_");
+
     try{
         const { rows } = await pool.query(
-            `INSERT INTO services(name, base_price, description)
-            VALUES ($1, $2, $3)
-            RETURNING id, name, base_price, uuid, created_at`,
-            [name, base_price, description]
+            `INSERT INTO services(name, code, base_price, description)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, name, code, base_price, uuid, created_at`,
+            [name, serviceCode, base_price, description]
         )
         return rows[0] ?? null;
     }
@@ -123,4 +125,3 @@ export async function remove(id){
 
     return rowCount === 1;
 }
-

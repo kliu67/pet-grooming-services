@@ -31,13 +31,15 @@ beforeEach(() => {
 
 describe('findAll', () => {
   it('returns all rows', async () => {
-    const mockRows = [{ id: 1 }, { id: 2 }];
+    const mockRows = [{ id: 1, code: 'WASH' }, { id: 2, code: 'NAIL_TRIM' }];
     pool.query.mockResolvedValue({ rows: mockRows });
 
     const result = await findAll();
 
     expect(result).toEqual(mockRows);
-    expect(pool.query).toHaveBeenCalled();
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining('SELECT id, name, base_price, code, description, uuid, created_at FROM services')
+    );
   });
 });
 
@@ -97,7 +99,7 @@ describe('create', () => {
   });
 
   it('returns inserted row', async () => {
-    const mockRow = { id: 1, name: 'Wash', base_price: 10, description: 'some description' };
+    const mockRow = { id: 1, name: 'Wash', code: 'WASH', base_price: 10, description: 'some description' };
 
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
@@ -106,7 +108,7 @@ describe('create', () => {
     expect(result).toEqual(mockRow);
     expect(pool.query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO services'),
-      ['Wash', 10, 'some description']
+      ['Wash', 'WASH', 10, 'some description']
     );
   });
 
