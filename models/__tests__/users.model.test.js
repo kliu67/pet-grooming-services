@@ -8,7 +8,7 @@ vi.mock('../../db.js', () => ({
 }));
 
 // ---- Mock validators ----
-vi.mock('../../validators/user.validator.js', () => ({
+vi.mock('../../validators/client.validator.js', () => ({
   isValidEmail: vi.fn(),
   isValidPhone: vi.fn(),
 }));
@@ -20,7 +20,7 @@ vi.mock('../../validators/validator.js', () => ({
 
 // ---- Import after mocks ----
 import { pool } from '../../db.js';
-import { isValidEmail, isValidPhone } from '../../validators/user.validator.js';
+import { isValidEmail, isValidPhone } from '../../validators/client.validator.js';
 import { isIdValidNumeric, validateNumericId } from '../../validators/validator.js';
 
 import {
@@ -29,7 +29,7 @@ import {
   create,
   update,
   remove,
-} from '../user.model.js';
+} from '../clients.model.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -54,7 +54,7 @@ describe('findAll', () => {
 // FIND BY ID
 //
 describe('findById', () => {
-  it('returns user when found', async () => {
+  it('returns client when found', async () => {
     validateNumericId.mockReturnValue(1);
     pool.query.mockResolvedValue({ rows: [{ id: 1 }] });
 
@@ -127,7 +127,7 @@ describe('create', () => {
   it('handles duplicate email', async () => {
     pool.query.mockRejectedValue({
       code: '23505',
-      constraint: 'users_email_key',
+      constraint: 'clients_email_key',
     });
 
     await expect(create({
@@ -138,17 +138,17 @@ describe('create', () => {
     })).rejects.toThrow('email already exists');
   });
 
-  it('handles duplicate phone', async () => {
+  it('handles duplicate first_name + last_name + phone combination', async () => {
     pool.query.mockRejectedValue({
       code: '23505',
-      constraint: 'users_phone_key',
+      constraint: 'clients_first_name_last_name_phone_key',
     });
 
     await expect(create({
       first_name: 'John',
       last_name: 'Doe',
       phone: '123456'
-    })).rejects.toThrow('phone already exists');
+    })).rejects.toThrow('client with this first name, last name, and phone already exists');
   });
 });
 
@@ -184,23 +184,34 @@ describe('update', () => {
     expect(result).toEqual(mockRow);
   });
 
-  it('throws if user not found', async () => {
+  it('throws if client not found', async () => {
     pool.query.mockResolvedValue({ rows: [] });
 
     await expect(update(1, { first_name: 'John' }))
       .rejects
-      .toThrow('user not found');
+      .toThrow('client not found');
   });
 
   it('handles duplicate email', async () => {
     pool.query.mockRejectedValue({
       code: '23505',
-      constraint: 'users_email_key',
+      constraint: 'clients_email_key',
     });
 
     await expect(update(1, { email: 'a@test.com' }))
       .rejects
       .toThrow('email already exists');
+  });
+
+  it('handles duplicate first_name + last_name + phone combination', async () => {
+    pool.query.mockRejectedValue({
+      code: '23505',
+      constraint: 'clients_first_name_last_name_phone_key',
+    });
+
+    await expect(update(1, { first_name: 'John', last_name: 'Doe', phone: '123456' }))
+      .rejects
+      .toThrow('client with this first name, last name, and phone already exists');
   });
 });
 
@@ -212,10 +223,10 @@ describe('remove', () => {
     await expect(remove(0)).rejects.toThrow('invalid id');
   });
 
-  it('throws if user not found', async () => {
+  it('throws if client not found', async () => {
     pool.query.mockResolvedValue({ rowCount: 0 });
 
-    await expect(remove(1)).rejects.toThrow('user not found');
+    await expect(remove(1)).rejects.toThrow('client not found');
   });
 
   it('returns true when deleted', async () => {

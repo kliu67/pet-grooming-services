@@ -1,0 +1,11 @@
+{
+    "stylists":[
+        {
+            "first_name": "Rachel",
+            "last_name": "Wang",
+            "email": "wjsrachel@gmail.com",
+            "phone": "6476172401",
+            "is_active": true
+        }
+    ]
+}
