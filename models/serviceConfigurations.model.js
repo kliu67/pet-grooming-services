@@ -33,7 +33,7 @@ function validateDuration(minutes) {
 
 export async function findAll(){
     const { rows } = await pool.query(
-        `SELECT id, breed_id, service_id, weight_class_id, price, duration_minutes, is_active, created_at, updated_at FROM service_configurations`
+        `SELECT id, breed_id, service_id, weight_class_id, price, duration_minutes, buffer_minutes, is_active, created_at, updated_at FROM service_configurations`
     )
     return rows ?? null;
 }
@@ -48,7 +48,7 @@ export async function findOne(breedId, serviceId, weightClassId) {
   const { rows } = await pool.query(
     `
     SELECT breed_id, service_id, weight_class_id,
-           price, duration_minutes, is_active
+           price, duration_minutes, buffer_minutes, is_active
     FROM service_configurations
     WHERE breed_id = $1
       AND service_id = $2
@@ -69,6 +69,7 @@ export async function create({
   weight_class_id,
   price,
   duration_minutes,
+  buffer_minutes,
   is_active = true,
 }) {
   const sid = validateId(breed_id, 'breed_id');
@@ -76,17 +77,18 @@ export async function create({
   const wid = validateId(weight_class_id, 'weight_class_id');
   const p = validatePrice(price);
   const d = validateDuration(duration_minutes);
+  const b = validateBuffer(buffer_minutes);
 
   try {
     const { rows } = await pool.query(
       `
       INSERT INTO service_configurations
-        (breed_id, service_id, weight_class_id, price, duration_minutes, is_active)
-      VALUES ($1, $2, $3, $4, $5, $6)
+        (breed_id, service_id, weight_class_id, price, duration_minutes, buffer_minutes, is_active)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING breed_id, service_id, weight_class_id,
                 price, duration_minutes, is_active
       `,
-      [sid, srv, wid, p, d, is_active]
+      [sid, srv, wid, p, d, b, is_active]
     );
 
     return rows[0];
@@ -131,6 +133,11 @@ export async function update(
   if ('duration_minutes' in updates) {
     fields.push(`duration_minutes = $${index++}`);
     values.push(validateDuration(updates.duration_minutes));
+  }
+
+    if ('buffer_minutes' in updates) {
+    fields.push(`buffer_minutes = $${index++}`);
+    values.push(validateDuration(updates.buffer_minutes));
   }
 
   if ('is_active' in updates) {
