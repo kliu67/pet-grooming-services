@@ -20,6 +20,7 @@ import {
   remove,
   update,
   findAll,
+  findUpcomingByStylistId,
   findByClientId,
   findByPetId,
   findByServiceId,
@@ -147,6 +148,27 @@ describe("findAll()", () => {
     expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
   });
 });
+
+describe("findUpcomingByStylistId()", () => {
+  it("returns upcoming appointments for a stylist", async () => {
+    const upcoming = [{ id: 2 }, { id: 3 }];
+    pool.query.mockResolvedValue({ rows: upcoming });
+
+    const result = await findUpcomingByStylistId(2);
+
+    expect(result).toEqual(upcoming);
+    expect(pool.query).toHaveBeenCalledTimes(1);
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE stylist_id = $1"),
+      [2],
+    );
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("effective_end_time > NOW()"),
+      [2],
+    );
+  });
+});
+
 describe("findById()", () => {
   it("returns appointment", async () => {
     pool.query.mockResolvedValue({

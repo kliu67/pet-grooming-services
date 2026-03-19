@@ -40,6 +40,22 @@ export async function findAll() {
   return rows;
 }
 
+export async function findUpcomingByStylistId(stylistId) {
+  const sanitizedId = validateNumericId(stylistId);
+  const { rows } = await pool.query(
+    `
+    SELECT id, stylist_id, start_datetime, end_datetime, reason
+    FROM stylist_time_offs
+    WHERE stylist_id = $1
+      AND end_datetime > NOW()
+    ORDER BY end_datetime ASC
+    `,
+    [sanitizedId]
+  );
+
+  return rows ?? [];
+}
+
 export async function findById(id) {
   const sanitizedId = validateNumericId(id);
 

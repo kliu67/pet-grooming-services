@@ -13,6 +13,32 @@ export async function getAllAppointments(req, res) {
   }
 }
 
+export async function getUpcomingAppointmentsByStylistId(req, res) {
+  try {
+    const { stylistId } = req.params;
+    const appointments = await Appointment.findUpcomingByStylistId(stylistId);
+    return res.status(200).json(appointments ?? []);
+  } catch (err) {
+    if (err.message.includes("invalid")) {
+      return res.status(400).json({ error: err.message });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+export async function getAppointmentsByStylistId(req, res) {
+  try {
+    const { stylistId } = req.params;
+    const appointments = await Appointment.findByStylistId(stylistId);
+    return res.status(200).json(appointments ?? []);
+  } catch (err) {
+    if (err.message.includes("invalid")) {
+      return res.status(400).json({ error: err.message });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 export async function bookAppointment(req, res) {
   try {
     const created = await Appointment.book(req.body);

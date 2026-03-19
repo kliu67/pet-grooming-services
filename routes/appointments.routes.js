@@ -6,11 +6,15 @@ import {
   updateAppointment,
   getAllAppointments,
   deleteAppointment,
+  getAppointmentsByStylistId,
+  getUpcomingAppointmentsByStylistId,
 } from "../controllers/appointments.controller.js";
 
 const appointmentRoutes = express.Router();
 
 appointmentRoutes.get("/", getAllAppointments)
+appointmentRoutes.get("/stylist/:stylistId/upcoming", getUpcomingAppointmentsByStylistId);
+appointmentRoutes.get("/stylist/:stylistId", getAppointmentsByStylistId);
 appointmentRoutes.post("/", bookAppointment);
 appointmentRoutes.get("/:id", getAppointmentById);
 appointmentRoutes.patch("/:id/cancel", cancelAppointment);

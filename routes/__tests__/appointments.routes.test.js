@@ -134,6 +134,54 @@ describe("Appointment Routes", () => {
     });
   });
 
+  describe("GET /appointments/stylist/:stylistId", () => {
+    it("returns appointments for stylist", async () => {
+      const mockAppointments = [
+        { id: 1, stylist_id: 2, status: "booked" },
+        { id: 2, stylist_id: 2, status: "confirmed" },
+      ];
+      Appointment.findByStylistId.mockResolvedValue(mockAppointments);
+
+      const res = await request(app).get("/appointments/stylist/2");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(mockAppointments);
+    });
+
+    it("returns 400 for invalid stylist id", async () => {
+      Appointment.findByStylistId.mockRejectedValue(new Error("invalid stylist id"));
+
+      const res = await request(app).get("/appointments/stylist/abc");
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("invalid stylist id");
+    });
+  });
+
+  describe("GET /appointments/stylist/:stylistId/upcoming", () => {
+    it("returns upcoming appointments for stylist", async () => {
+      const upcoming = [
+        { id: 11, stylist_id: 2, effective_end_time: "2099-01-01T10:30:00.000Z" },
+        { id: 12, stylist_id: 2, effective_end_time: "2099-01-01T11:00:00.000Z" },
+      ];
+      Appointment.findUpcomingByStylistId.mockResolvedValue(upcoming);
+
+      const res = await request(app).get("/appointments/stylist/2/upcoming");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(upcoming);
+    });
+
+    it("returns 400 for invalid stylist id", async () => {
+      Appointment.findUpcomingByStylistId.mockRejectedValue(new Error("invalid stylist id"));
+
+      const res = await request(app).get("/appointments/stylist/abc/upcoming");
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("invalid stylist id");
+    });
+  });
+
   describe("PATCH /appointments/:id/cancel", () => {
     it("cancels appointment", async () => {
       const cancelled = { id: 1, status: "cancelled" };

@@ -431,6 +431,20 @@ export async function findAll() {
   return rows ?? null;
 }
 
+export async function findUpcomingByStylistId(stylistId) {
+  const sanitizedId = validateId(stylistId, "stylist id");
+  const { rows } = await pool.query(
+    `
+    SELECT * FROM appointments
+    WHERE stylist_id = $1
+      AND effective_end_time > NOW()
+    ORDER BY effective_end_time ASC
+    `,
+    [sanitizedId],
+  );
+  return rows ?? [];
+}
+
 export async function findById(id) {
   const numericId = validateId(id);
 
