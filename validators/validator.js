@@ -1,16 +1,19 @@
 export function isIdValidNumeric(id) {
   //number cannot be undefined or null
-   if (id === undefined || id === null) {
+  if (id === undefined || id === null) {
     return false;
   }
 
   const numericId = Number(id);
 
   //id must be an integer greater than 0
-  if (Number.isNaN(numericId) || !Number.isInteger(numericId) || numericId <= 0) 
-    {
+  if (
+    Number.isNaN(numericId) ||
+    !Number.isInteger(numericId) ||
+    numericId <= 0
+  ) {
     return false;
-    }
+  }
 
   return true;
 }
@@ -34,4 +37,22 @@ export function validateNumericId(id) {
   }
 
   return numericId; // return sanitized value
+}
+
+export function validateDescription(desc) {
+  if (desc != null && typeof desc !== "string") {
+    throw new Error("description must be a string");
+  }
+  return true;
+}
+
+export function validateStatus(status) {
+  const validStatuses = ['booked', 'cancelled', 'completed'];
+  if (status != null && typeof status !== "string") {
+    throw new Error("description must be a string");
+  }
+  if(validStatuses.indexOf(status) < 0){
+    throw new Error("status not found");
+  }
+  return true;
 }

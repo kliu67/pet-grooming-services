@@ -14,7 +14,7 @@ import {
   findById,
   create,
   remove,
-} from '../species.model.js';
+} from '../breeds.model.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -39,7 +39,7 @@ describe('findAll', () => {
 // FIND BY ID
 //
 describe('findById', () => {
-  it('returns species when found', async () => {
+  it('returns breed when found', async () => {
     pool.query.mockResolvedValue({ rows: [{ id: 1, name: 'dog' }] });
 
     const result = await findById(1);
@@ -65,7 +65,7 @@ describe('findById', () => {
 //
 describe('create', () => {
   it('throws if name invalid', async () => {
-    await expect(create('')).rejects.toThrow('invalid species name');
+    await expect(create('')).rejects.toThrow('invalid breed name');
   });
 
   it('inserts and returns row', async () => {
@@ -78,10 +78,10 @@ describe('create', () => {
     expect(pool.query).toHaveBeenCalled();
   });
 
-  it('handles duplicate species', async () => {
+  it('handles duplicate breed', async () => {
     pool.query.mockRejectedValue({ code: '23505' });
 
-    await expect(create('dog')).rejects.toThrow('species already exists');
+    await expect(create('dog')).rejects.toThrow('breed already exists');
   });
 });
 
@@ -93,10 +93,10 @@ describe('remove', () => {
     await expect(remove(0)).rejects.toThrow('invalid id');
   });
 
-  it('throws if species not found', async () => {
+  it('throws if breed not found', async () => {
     pool.query.mockResolvedValue({ rowCount: 0 });
 
-    await expect(remove(1)).rejects.toThrow('species not found');
+    await expect(remove(1)).rejects.toThrow('breed not found');
   });
 
   it('returns true when deleted', async () => {
@@ -110,6 +110,6 @@ describe('remove', () => {
   it('throws if FK constraint prevents delete', async () => {
     pool.query.mockRejectedValue({ code: '23503' });
 
-    await expect(remove(1)).rejects.toThrow('cannot delete species in use');
+    await expect(remove(1)).rejects.toThrow('cannot delete breed in use');
   });
 });

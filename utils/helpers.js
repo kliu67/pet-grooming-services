@@ -21,3 +21,17 @@ export const isValidId = (id) => {
 export const isValidPrice = (price) =>{
   return price >= 0;
 }
+
+export const computeBuffer = (serviceName) =>{
+  let buffer = 0;
+  switch(serviceName){
+    case 'Bath':
+    case 'Full grooming':
+    case 'Basic grooming':
+      buffer = 20;
+      break;
+    default:
+      buffer = 10;
+  }
+  return buffer;
+}
