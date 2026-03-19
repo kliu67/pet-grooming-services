@@ -24,7 +24,7 @@ function validateId(id) {
  */
 export async function findAll() {
   const { rows } = await pool.query(
-    `SELECT id, label FROM weight_classes ORDER BY id ASC`
+    `SELECT id, label, code, jsonb_build_array(lower(weight_range), upper(weight_range)) AS weight_bounds FROM weight_classes ORDER BY id ASC`
   );
   return rows;
 }
@@ -36,7 +36,7 @@ export async function findById(id) {
   const numericId = validateId(id);
 
   const { rows } = await pool.query(
-    `SELECT id, label FROM weight_classes WHERE id = $1`,
+    `SELECT id, label, code, jsonb_build_array(lower(weight_range), upper(weight_range)) AS weight_bounds FROM weight_classes WHERE id = $1`,
     [numericId]
   );
 
@@ -48,15 +48,15 @@ export async function findById(id) {
  */
 export async function create(label) {
   const normalized = normalizeLabel(label);
-
+  const code = normalized.toUpperCase().replaceAll(" ", "_");
   try {
     const { rows } = await pool.query(
       `
-      INSERT INTO weight_classes (label)
-      VALUES ($1)
+      INSERT INTO weight_classes (label, code)
+      VALUES ($1, $2)
       RETURNING id, label
       `,
-      [normalized]
+      [normalized, code]
     );
 
     return rows[0];
