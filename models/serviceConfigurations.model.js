@@ -26,6 +26,18 @@ function validateDuration(minutes) {
   return n;
 }
 
+function validateBuffer(minutes) {
+  if (minutes === undefined || minutes === null) {
+    return 0;
+  }
+
+  const n = Number(minutes);
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error('invalid buffer');
+  }
+  return n;
+}
+
 /* ---------------- CRUD ---------------- */
 /**
  * Get all configurations
@@ -135,9 +147,9 @@ export async function update(
     values.push(validateDuration(updates.duration_minutes));
   }
 
-    if ('buffer_minutes' in updates) {
+  if ('buffer_minutes' in updates) {
     fields.push(`buffer_minutes = $${index++}`);
-    values.push(validateDuration(updates.buffer_minutes));
+    values.push(validateBuffer(updates.buffer_minutes));
   }
 
   if ('is_active' in updates) {

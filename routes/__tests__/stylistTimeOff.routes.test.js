@@ -22,6 +22,19 @@ describe("stylistTimeOff.routes", () => {
     expect(res.body).toEqual([{ id: 1 }]);
   });
 
+  it("GET /stylist/:stylistId/upcoming returns future rows", async () => {
+    Model.findUpcomingByStylistId.mockResolvedValue([{ id: 2, stylist_id: 1 }]);
+    const res = await request(app).get("/timeOffs/stylist/1/upcoming");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([{ id: 2, stylist_id: 1 }]);
+  });
+
+  it("GET /stylist/:stylistId/upcoming returns 400 for invalid stylist id", async () => {
+    Model.findUpcomingByStylistId.mockRejectedValue(new Error("ID must be a number"));
+    const res = await request(app).get("/timeOffs/stylist/abc/upcoming");
+    expect(res.status).toBe(400);
+  });
+
   it("GET /:id returns 404 if missing", async () => {
     Model.findById.mockResolvedValue(null);
     const res = await request(app).get("/timeOffs/99");

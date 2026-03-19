@@ -9,6 +9,19 @@ export async function getAllStylistTimeOff(req, res) {
   }
 }
 
+export async function getUpcomingStylistTimeOffByStylistId(req, res) {
+  try {
+    const { stylistId } = req.params;
+    const rows = await StylistTimeOff.findUpcomingByStylistId(stylistId);
+    return res.status(200).json(rows ?? []);
+  } catch (err) {
+    if (err.message.includes("validation") || err.message.includes("ID")) {
+      return res.status(400).json({ error: err.message });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 export async function getStylistTimeOffById(req, res) {
   try {
     const { id } = req.params;

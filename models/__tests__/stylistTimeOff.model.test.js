@@ -9,6 +9,7 @@ vi.mock("../../db.js", () => ({
 import { pool } from "../../db.js";
 import {
   findAll,
+  findUpcomingByStylistId,
   findById,
   create,
   update,
@@ -24,6 +25,21 @@ describe("stylistTimeOff.model", () => {
     pool.query.mockResolvedValue({ rows: [{ id: 1 }] });
     const result = await findAll();
     expect(result).toEqual([{ id: 1 }]);
+  });
+
+  it("findUpcomingByStylistId returns rows", async () => {
+    const rows = [{ id: 2 }, { id: 3 }];
+    pool.query.mockResolvedValue({ rows });
+    const result = await findUpcomingByStylistId(1);
+    expect(result).toEqual(rows);
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("WHERE stylist_id = $1"),
+      [1],
+    );
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("end_datetime > NOW()"),
+      [1],
+    );
   });
 
   it("findById validates id", async () => {
