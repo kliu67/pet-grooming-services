@@ -79,7 +79,7 @@ export async function updateClient(req, res, next) {
     });
   }
 
-  if (email !== undefined && email !== null && !isValidEmail(email)) {
+  if (email !== undefined && email !== null && email !== '' && !isValidEmail(email)) {
     return res.status(400).json({ error: "invalid email format" });
   }
 

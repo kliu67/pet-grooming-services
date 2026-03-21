@@ -59,7 +59,7 @@ export async function create({ first_name, last_name, email, phone, description 
 
   //email validation
 
-  email = email?.trim().toLowerCase() ?? null;
+  email = email?.trim().toLowerCase() || null;
   if (email && !isValidEmail(email)) {
   throw new Error('invalid email format');
   }
@@ -77,7 +77,7 @@ export async function create({ first_name, last_name, email, phone, description 
       VALUES ($1, $2, $3, $4, $5)
       RETURNING id, first_name, last_name, email, phone ,description
       `,
-      [first_name, last_name, email, phone, description ?? null]
+      [first_name, last_name, email || null, phone, description ?? null]
     ); 
     return rows[0];
   }
@@ -160,9 +160,9 @@ export async function update(id, updates) {
   if ('email' in updates) {
     let email = updates.email;
 
-    email = email?.trim().toLowerCase() ?? null;
+    email = email?.trim().toLowerCase() || null;
 
-    if (email && !isValidEmail(email)) {
+    if (email !== '' && email !== null && email !== undefined && !isValidEmail(email)) {
       throw new Error('invalid email format');
     }
 
