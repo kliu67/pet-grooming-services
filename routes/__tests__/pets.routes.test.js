@@ -89,13 +89,14 @@ describe("Pet Routes", () => {
         name: "Buddy",
         breed: 1,
         owner: 1,
+        weight_class_id: 2,
       };
 
       Pet.create.mockResolvedValue(newPet);
 
       const res = await request(app)
         .post("/pets")
-        .send({ name: "Buddy", breed: 1, owner: 1 });
+        .send({ name: "Buddy", breed: 1, owner: 1, weightClassId: 2 });
 
       expect(res.status).toBe(201);
       expect(res.body).toEqual(newPet);
@@ -103,6 +104,7 @@ describe("Pet Routes", () => {
         name: "Buddy",
         breed: 1,
         owner: 1,
+        weightClassId: 2,
       });
     });
 
@@ -111,10 +113,20 @@ describe("Pet Routes", () => {
 
       const res = await request(app)
         .post("/pets")
-        .send({ name: "", breed: 1, owner: 1 });
+        .send({ name: "", breed: 1, owner: 1, weightClassId: 2 });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBeDefined();
+    });
+
+    it("returns 400 when weight class is missing", async () => {
+      const res = await request(app)
+        .post("/pets")
+        .send({ name: "Buddy", breed: 1, owner: 1 });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain("weightClassId");
+      expect(Pet.create).not.toHaveBeenCalled();
     });
   });
 

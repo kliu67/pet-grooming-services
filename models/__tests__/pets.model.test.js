@@ -70,20 +70,26 @@ describe("findById", () => {
 //
 describe("create", () => {
   it("throws if name invalid", async () => {
-    await expect(create({ name: "", breed: 1, owner: 1 })).rejects.toThrow(
+    await expect(create({ name: "", breed: 1, owner: 1, weightClassId: 1 })).rejects.toThrow(
       "pet name cannot be empty"
     );
   });
 
   it("throws if breed invalid", async () => {
     await expect(
-      create({ name: "Buddy", breed: 0, owner: 1 })
+      create({ name: "Buddy", breed: 0, owner: 1, weightClassId: 1 })
     ).rejects.toThrow("invalid id");
   });
 
   it("throws if owner invalid", async () => {
     await expect(
-      create({ name: "Buddy", breed: 1, owner: 0 })
+      create({ name: "Buddy", breed: 1, owner: 0, weightClassId: 1 })
+    ).rejects.toThrow("invalid id");
+  });
+
+  it("throws if weight class is missing", async () => {
+    await expect(
+      create({ name: "Buddy", breed: 1, owner: 1 })
     ).rejects.toThrow("invalid id");
   });
 
@@ -94,7 +100,8 @@ describe("create", () => {
     const result = await create({
       name: "Buddy",
       breed: 1,
-      owner: 1
+      owner: 1,
+      weightClassId: 1,
     });
 
     expect(result).toEqual(mockRow);
@@ -102,13 +109,16 @@ describe("create", () => {
   });
 
   it("handles FK violation", async () => {
-    pool.query.mockRejectedValue({ code: "23503" });
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // weight class lookup
+      .mockRejectedValueOnce({ code: "23503" }); // insert FK failure
 
     await expect(
       create({
         name: "Buddy",
         breed: 999,
-        owner: 1
+        owner: 1,
+        weightClassId: 1,
       })
     ).rejects.toThrow("invalid breed or owner");
   });
