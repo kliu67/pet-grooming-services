@@ -132,6 +132,16 @@ describe("Appointment Routes", () => {
 
       expect(res.status).toBe(400);
     });
+
+    it("adds appointment_number when missing on DB-like row", async () => {
+      const mockAppt = { id: 12, uuid: "ea5b7f30-8ed7-4d9f-8df0-5998b356d8d1", status: "booked" };
+      Appointment.findById.mockResolvedValue(mockAppt);
+
+      const res = await request(app).get("/appointments/12");
+
+      expect(res.status).toBe(200);
+      expect(res.body.appointment_number).toBe("APT-00000012");
+    });
   });
 
   describe("GET /appointments/stylist/:stylistId", () => {
