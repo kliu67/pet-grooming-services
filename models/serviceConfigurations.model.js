@@ -59,7 +59,7 @@ export async function findOne(breedId, serviceId, weightClassId) {
 
   const { rows } = await pool.query(
     `
-    SELECT breed_id, service_id, weight_class_id,
+    SELECT id, breed_id, service_id, weight_class_id,
            price, duration_minutes, buffer_minutes, is_active
     FROM service_configurations
     WHERE breed_id = $1
