@@ -26,6 +26,7 @@ import { isIdValidNumeric, validateNumericId } from '../../validators/validator.
 import {
   findAll,
   findById,
+  findByNameAndPhone,
   create,
   update,
   remove,
@@ -70,6 +71,37 @@ describe('findById', () => {
     const result = await findById(1);
 
     expect(result).toBeNull();
+  });
+});
+
+//
+// FIND BY FIRST/LAST/PHONE
+//
+describe('findByNameAndPhone', () => {
+  it('returns client when found', async () => {
+    isValidPhone.mockReturnValue(true);
+    pool.query.mockResolvedValue({ rows: [{ id: 1, first_name: 'John', last_name: 'Doe', phone: '123456' }] });
+
+    const result = await findByNameAndPhone('John', 'Doe', '123456');
+
+    expect(result).toEqual({ id: 1, first_name: 'John', last_name: 'Doe', phone: '123456' });
+  });
+
+  it('returns null when not found', async () => {
+    isValidPhone.mockReturnValue(true);
+    pool.query.mockResolvedValue({ rows: [] });
+
+    const result = await findByNameAndPhone('John', 'Doe', '123456');
+
+    expect(result).toBeNull();
+  });
+
+  it('throws when phone format is invalid', async () => {
+    isValidPhone.mockReturnValue(false);
+
+    await expect(findByNameAndPhone('John', 'Doe', 'bad'))
+      .rejects
+      .toThrow('invalid phone format');
   });
 });
 
