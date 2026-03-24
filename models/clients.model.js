@@ -27,6 +27,43 @@ export async function findById(id) {
 }
 
 /**
+ * Get client by first name, last name, and phone
+ */
+export async function findByNameAndPhone(firstName, lastName, phone) {
+  if (
+    typeof firstName !== "string" ||
+    firstName.trim() === "" ||
+    typeof lastName !== "string" ||
+    lastName.trim() === ""
+  ) {
+    throw new Error("first name and last name cannot be null or empty");
+  }
+
+  if (typeof phone !== "string" || phone.trim() === "") {
+    throw new Error("phone cannot be null or empty");
+  }
+
+  const sanitizedPhone = phone.trim();
+  if (!isValidPhone(sanitizedPhone)) {
+    throw new Error("invalid phone format");
+  }
+
+  const { rows } = await pool.query(
+    `
+    SELECT id, first_name, last_name, email, phone, description, created_at
+    FROM clients
+    WHERE LOWER(first_name) = LOWER($1)
+      AND LOWER(last_name) = LOWER($2)
+      AND phone = $3
+    LIMIT 1
+    `,
+    [firstName.trim(), lastName.trim(), sanitizedPhone]
+  );
+
+  return rows[0] ?? null;
+}
+
+/**
  * Create item
  */
 export async function create({ first_name, last_name, email, phone, description }) {
@@ -268,4 +305,3 @@ export async function remove(id) {
     throw err; // never swallow unknown DB errors
   }
 }
-

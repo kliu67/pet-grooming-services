@@ -35,6 +35,38 @@ export async function getClientById(req, res, next) {
 }
 
 /**
+ * GET /clients/lookup?first_name=...&last_name=...&phone=...
+ */
+export async function getClientByNameAndPhone(req, res, next) {
+  const { first_name, last_name, phone } = req.query;
+
+  if (!first_name || !last_name || !phone) {
+    return res.status(400).json({
+      error: "first_name, last_name and phone are required",
+    });
+  }
+
+  if (!isValidPhone(phone)) {
+    return res.status(400).json({ error: "invalid phone format" });
+  }
+
+  try {
+    const client = await Client.findByNameAndPhone(first_name, last_name, phone);
+    if (!client) return res.status(404).json({ error: "Client not found" });
+    return res.status(200).json(client);
+  } catch (err) {
+    if (
+      err.message?.includes("invalid") ||
+      err.message?.includes("cannot be null") ||
+      err.message?.includes("cannot be empty")
+    ) {
+      return res.status(400).json({ error: err.message });
+    }
+    return next(err);
+  }
+}
+
+/**
  * POST /clients
  */
 export async function createClient(req, res, next) {

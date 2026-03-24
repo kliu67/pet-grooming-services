@@ -4,6 +4,7 @@ import * as ClientController from "../controllers/clients.controller.js";
 const clientRoutes = express.Router();
 
 clientRoutes.get("/", ClientController.getAllClients);
+clientRoutes.get("/lookup", ClientController.getClientByNameAndPhone);
 clientRoutes.get("/:id", ClientController.getClientById);
 clientRoutes.post("/", ClientController.createClient);
 clientRoutes.put("/:id", ClientController.updateClient);
