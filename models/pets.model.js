@@ -39,7 +39,7 @@ export async function findByOwner(ownerId) {
 
   const { rows } = await pool.query(
     `
-    SELECT p.id, p.name, p.uuid, p.created_at, p.updated_at, p.weight_class_id
+    SELECT p.id, p.name, p.uuid, p.created_at, p.updated_at, p.weight_class_id,
            s.id AS breed_id, s.name AS breed
     FROM pets p
     JOIN breeds s ON p.breed = s.id
