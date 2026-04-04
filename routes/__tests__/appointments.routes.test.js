@@ -106,6 +106,68 @@ describe("Appointment Routes", () => {
     });
   });
 
+  describe("POST /appointments/from-scratch", () => {
+    it("books appointment from scratch successfully", async () => {
+      const mockAppt = {
+        id: 101,
+        client_id: 1,
+        pet_id: 10,
+        service_id: 3,
+        stylist_id: 2,
+        status: "booked",
+      };
+
+      Appointment.bookFromScratch.mockResolvedValue(mockAppt);
+
+      const res = await request(app).post("/appointments/from-scratch").send({
+        first_name: "Kai",
+        last_name: "Li",
+        phone: "1234567890",
+        pet_name: "Mochi",
+        breed_id: 2,
+        weight_class_id: 1,
+        service_id: 3,
+        stylist_id: 2,
+        start_time: "2026-01-01T10:00:00Z",
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual(mockAppt);
+      expect(Appointment.bookFromScratch).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns 409 when appointment overlaps", async () => {
+      Appointment.bookFromScratch.mockRejectedValue(
+        new Error("appointment overlaps existing booking"),
+      );
+
+      const res = await request(app).post("/appointments/from-scratch").send({
+        first_name: "Kai",
+        last_name: "Li",
+        phone: "1234567890",
+        pet_name: "Mochi",
+        breed_id: 2,
+        weight_class_id: 1,
+        service_id: 3,
+        stylist_id: 2,
+        start_time: "2026-01-01T10:00:00Z",
+      });
+
+      expect(res.status).toBe(409);
+    });
+
+    it("returns 400 for validation error", async () => {
+      Appointment.bookFromScratch.mockRejectedValue(new Error("invalid first_name"));
+
+      const res = await request(app).post("/appointments/from-scratch").send({
+        first_name: "",
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("invalid first_name");
+    });
+  });
+
   describe("GET /appointments/:id", () => {
     it("returns appointment", async () => {
       const mockAppt = { id: 1, status: "booked" };

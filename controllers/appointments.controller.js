@@ -90,6 +90,29 @@ export async function bookAppointment(req, res) {
   }
 }
 
+export async function bookAppointmentFromScratch(req, res) {
+  try {
+    const created = await Appointment.bookFromScratch(req.body);
+    return res.status(201).json(shapeAppointment(created));
+  } catch (err) {
+    if (
+      err.message.includes("invalid") ||
+      err.message.includes("not found") ||
+      err.message.includes("configuration") ||
+      err.message.includes("does not belong") ||
+      err.message.includes("not available")
+    ) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    if (err.message.includes("overlaps")) {
+      return res.status(409).json({ error: err.message });
+    }
+
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 export async function getAppointmentById(req, res) {
   try {
     const { id } = req.params;
