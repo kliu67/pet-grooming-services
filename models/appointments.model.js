@@ -1,7 +1,12 @@
 import { pool } from "../db.js";
 import { parseTimeToMinutes, parseDateToMinutes } from "../utils/timeRanges.js";
 import { areIntervalsOverlapping } from "date-fns";
-import { validateDescription, validateStatus } from "../validators/validator.js";
+import {
+  validateDescription,
+  validateStatus,
+} from "../validators/validator.js";
+import { isValidEmail } from "../utils/helpers.js";
+
 
 // const DB_FIELDS = {
 //   appointments: {
@@ -121,13 +126,17 @@ function assertStylistIsAvailable(availabilityData, stylistId, start, end) {
 
     if (startMinutes < availabilityStartMinutes) {
       //check appointment time is equal to or later than the availabile start time
-      throw new Error(`appointment start time is earlier than stylist ${stylistId}'s available window`);
+      throw new Error(
+        `appointment start time is earlier than stylist ${stylistId}'s available window`,
+      );
     }
 
     const availabilityEndMinutes = parseTimeToMinutes(availableTime.end_time);
     const endMinutes = parseDateToMinutes(end);
     if (endMinutes > availabilityEndMinutes) {
-      throw new Error(`appointment end time is later than stylist ${stylistId}'s available window`);
+      throw new Error(
+        `appointment end time is later than stylist ${stylistId}'s available window`,
+      );
     }
     return true;
   }
@@ -153,7 +162,9 @@ function assertNoTimeOffOverlap(timeOffData, stylistId, start, end) {
   });
 
   if (overlaps[0]) {
-    throw new Error(`appointment time overlaps with stylist ${stylistId}'s time off window`);
+    throw new Error(
+      `appointment time overlaps with stylist ${stylistId}'s time off window`,
+    );
   }
   return true;
 }
@@ -383,6 +394,36 @@ async function getTimeOff(dbClient, stylistId) {
   return timeOffRes.rows ?? [];
 }
 
+async function clientLookUp(dbClient, firstName, lastName, phone) {
+  const { rows } = await dbClient.query(
+    `
+    SELECT id, first_name, last_name, phone
+    FROM clients
+    WHERE LOWER(first_name) = LOWER($1)
+      AND LOWER(last_name) = LOWER($2)
+      AND phone = $3
+    LIMIT 1
+    `,
+    [firstName.trim(), lastName.trim(), phone.trim()],
+  );
+
+  return rows[0] ?? null;
+}
+
+async function getPetsByOwner(dbClient, ownerId) {
+  const { rows } = await dbClient.query(
+    `
+    SELECT id, name, breed, owner, weight_class_id
+    FROM pets
+    WHERE owner = $1
+    ORDER BY created_at DESC
+    `,
+    [ownerId],
+  );
+
+  return rows ?? [];
+}
+
 function mapBookingDbError(err) {
   if (err.code === "23P01") {
     return new Error("appointment overlaps existing booking");
@@ -569,8 +610,8 @@ export async function book({
 
     const effectiveEnd = new Date(
       start.getTime() +
-      Number(config.duration_minutes) * 60000 +
-      Number(config.buffer_minutes) * 60000,
+        Number(config.duration_minutes) * 60000 +
+        Number(config.buffer_minutes) * 60000,
     );
 
     //appointment start and end must be on the same day
@@ -587,11 +628,11 @@ export async function book({
     //appointment cannot overlap with another appointment
     await assertNoAppointmentOverlap(dbClient, stylistId, start, effectiveEnd);
 
-    if(description){
+    if (description) {
       validateDescription(description);
     }
 
-    if(status){
+    if (status) {
       validateStatus(status);
     }
 
@@ -627,7 +668,160 @@ export async function book({
     dbClient.release();
   }
 }
+export async function bookFromScratch({
+  first_name,
+  last_name,
+  phone,
+  email,
+  pet_name,
+  breed_id,
+  weight_class_id,
+  service_id,
+  stylist_id,
+  start_date,
+  start_time,
+  description = null,
+  status = null,
+}) {
+  if (typeof first_name !== "string" || first_name.trim() === "") {
+    throw new Error("invalid first_name");
+  }
 
+  if (typeof last_name !== "string" || last_name.trim() === "") {
+    throw new Error("invalid last_name");
+  }
+
+  if (typeof phone !== "string" || phone.trim() === "") {
+    throw new Error("invalid phone");
+  }
+
+  //email validation
+  email = email?.trim().toLowerCase() || null;
+  if (email && !isValidEmail(email)) {
+    throw new Error("invalid email format");
+  }
+
+  if (typeof pet_name !== "string" || pet_name.trim() === "") {
+    throw new Error("invalid pet_name");
+  }
+
+  const breedId = validateId(breed_id, "breed_id");
+  const weightClassId = validateId(weight_class_id, "weight_class_id");
+  const serviceId = validateId(service_id, "service_id");
+  const stylistId = validateId(stylist_id, "stylist_id");
+  const start = validateTime(start_time ?? start_date);
+  assertDateTimeNotInThePast(start);
+
+  if (description) {
+    validateDescription(description);
+  }
+
+  if (status) {
+    validateStatus(status);
+  }
+
+  const dbClient = await pool.connect();
+
+  try {
+    await dbClient.query("BEGIN");
+
+    let client = await clientLookUp(dbClient, first_name, last_name, phone);
+
+    if (!client) {
+      const createdClientRes = await dbClient.query(
+        `
+        INSERT INTO clients (first_name, last_name, phone)
+        VALUES ($1, $2, $3)
+        RETURNING id, first_name, last_name, phone
+        `,
+        [first_name.trim(), last_name.trim(), phone.trim()],
+      );
+      client = createdClientRes.rows[0];
+    }
+
+    const pets = await getPetsByOwner(dbClient, client.id);
+
+    const normalizedPetName = pet_name.trim().toLowerCase();
+    let pet = pets.find(
+      (p) =>
+        p.name?.trim().toLowerCase() === normalizedPetName &&
+        Number(p.breed) === breedId &&
+        Number(p.weight_class_id) === weightClassId,
+    );
+
+    if (!pet) {
+      const createdPetRes = await dbClient.query(
+        `
+        INSERT INTO pets (name, breed, owner, weight_class_id)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, name, breed, owner, weight_class_id
+        `,
+        [pet_name.trim(), breedId, client.id, weightClassId],
+      );
+      pet = createdPetRes.rows[0];
+    }
+
+    await assertStylistExists(dbClient, stylistId);
+    await assertServiceExists(dbClient, serviceId);
+
+    const config = await getActiveServiceConfigurationByFKs(
+      dbClient,
+      serviceId,
+      breedId,
+      weightClassId,
+    );
+
+    const end = new Date(
+      start.getTime() + Number(config.duration_minutes) * 60000,
+    );
+    const effectiveEnd = new Date(
+      start.getTime() +
+        Number(config.duration_minutes) * 60000 +
+        Number(config.buffer_minutes) * 60000,
+    );
+
+    assertStartEndOnSameDay(start, end);
+
+    const availabilityData = await getAvailability(dbClient, stylistId);
+    assertStylistIsAvailable(availabilityData, stylistId, start, end);
+
+    const timeOffsData = await getTimeOff(dbClient, stylistId);
+    assertNoTimeOffOverlap(timeOffsData, stylistId, start, end);
+
+    await assertNoAppointmentOverlap(dbClient, stylistId, start, effectiveEnd);
+
+    const insertRes = await dbClient.query(
+      `
+      INSERT INTO appointments
+        (client_id, pet_id, service_id, stylist_id,
+         start_time, end_time, effective_end_time, price_snapshot, duration_snapshot, description, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING *
+      `,
+      [
+        client.id,
+        pet.id,
+        serviceId,
+        stylistId,
+        start,
+        end,
+        effectiveEnd,
+        config.price,
+        config.duration_minutes,
+        description,
+        status,
+      ],
+    );
+
+    await dbClient.query("COMMIT");
+    return insertRes.rows[0];
+  } catch (err) {
+    await dbClient.query("ROLLBACK");
+    throw mapBookingDbError(err);
+  } finally {
+    dbClient.release();
+  }
+}
 export async function cancel(id) {
   const numericId = validateId(id);
 
@@ -752,7 +946,6 @@ export async function update(id, updates) {
     }
 
     if (shouldUseNewConfig) {
-
       const {
         price: currPrice,
         duration_minutes: currDuration,
@@ -778,7 +971,8 @@ export async function update(id, updates) {
         );
         effectiveEnd = new Date(
           start.getTime() +
-          Number(newConfig.duration_minutes + newConfig.buffer_minutes) * 60000,
+            Number(newConfig.duration_minutes + newConfig.buffer_minutes) *
+              60000,
         );
         shouldValidateTimeWindow = true;
       }
@@ -801,7 +995,7 @@ export async function update(id, updates) {
       end = new Date(start.getTime() + Number(config.duration_minutes) * 60000);
       effectiveEnd = new Date(
         start.getTime() +
-        Number(config.duration_minutes + config.buffer_minutes) * 60000,
+          Number(config.duration_minutes + config.buffer_minutes) * 60000,
       );
       shouldValidateTimeWindow = true;
     }
@@ -828,18 +1022,17 @@ export async function update(id, updates) {
       values.push(effectiveEnd);
     }
 
-    if("description" in updates){
+    if ("description" in updates) {
       const description = updates.description;
-      if(validateDescription(description)){
+      if (validateDescription(description)) {
         fields.push(`description = $${index++}`);
         values.push(description);
       }
-
     }
 
-    if("status" in updates){
+    if ("status" in updates) {
       const status = updates?.status;
-      if(validateStatus(status)){
+      if (validateStatus(status)) {
         fields.push(`status = $${index++}`);
         values.push(status);
       }

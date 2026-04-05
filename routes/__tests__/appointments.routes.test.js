@@ -106,6 +106,68 @@ describe("Appointment Routes", () => {
     });
   });
 
+  describe("POST /appointments/from-scratch", () => {
+    it("books appointment from scratch successfully", async () => {
+      const mockAppt = {
+        id: 101,
+        client_id: 1,
+        pet_id: 10,
+        service_id: 3,
+        stylist_id: 2,
+        status: "booked",
+      };
+
+      Appointment.bookFromScratch.mockResolvedValue(mockAppt);
+
+      const res = await request(app).post("/appointments/from-scratch").send({
+        first_name: "Kai",
+        last_name: "Li",
+        phone: "1234567890",
+        pet_name: "Mochi",
+        breed_id: 2,
+        weight_class_id: 1,
+        service_id: 3,
+        stylist_id: 2,
+        start_time: "2026-01-01T10:00:00Z",
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual(mockAppt);
+      expect(Appointment.bookFromScratch).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns 409 when appointment overlaps", async () => {
+      Appointment.bookFromScratch.mockRejectedValue(
+        new Error("appointment overlaps existing booking"),
+      );
+
+      const res = await request(app).post("/appointments/from-scratch").send({
+        first_name: "Kai",
+        last_name: "Li",
+        phone: "1234567890",
+        pet_name: "Mochi",
+        breed_id: 2,
+        weight_class_id: 1,
+        service_id: 3,
+        stylist_id: 2,
+        start_time: "2026-01-01T10:00:00Z",
+      });
+
+      expect(res.status).toBe(409);
+    });
+
+    it("returns 400 for validation error", async () => {
+      Appointment.bookFromScratch.mockRejectedValue(new Error("invalid first_name"));
+
+      const res = await request(app).post("/appointments/from-scratch").send({
+        first_name: "",
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("invalid first_name");
+    });
+  });
+
   describe("GET /appointments/:id", () => {
     it("returns appointment", async () => {
       const mockAppt = { id: 1, status: "booked" };
@@ -131,6 +193,16 @@ describe("Appointment Routes", () => {
       const res = await request(app).get("/appointments/abc");
 
       expect(res.status).toBe(400);
+    });
+
+    it("adds appointment_number when missing on DB-like row", async () => {
+      const mockAppt = { id: 12, uuid: "ea5b7f30-8ed7-4d9f-8df0-5998b356d8d1", status: "booked" };
+      Appointment.findById.mockResolvedValue(mockAppt);
+
+      const res = await request(app).get("/appointments/12");
+
+      expect(res.status).toBe(200);
+      expect(res.body.appointment_number).toBe("APT-00000012");
     });
   });
 

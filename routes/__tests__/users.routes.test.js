@@ -79,6 +79,48 @@ describe("GET /clients/:id", () => {
 });
 
 //
+// GET /clients/lookup
+//
+describe("GET /clients/lookup", () => {
+  it("returns client by first_name, last_name, and phone", async () => {
+    const mockClient = { id: 7, first_name: "John", last_name: "Doe", phone: "1234567890" };
+    Client.findByNameAndPhone.mockResolvedValue(mockClient);
+
+    const res = await request(app).get(
+      "/clients/lookup?first_name=John&last_name=Doe&phone=1234567890",
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(mockClient);
+    expect(Client.findByNameAndPhone).toHaveBeenCalledWith(
+      "John",
+      "Doe",
+      "1234567890",
+    );
+  });
+
+  it("returns 400 for missing query params", async () => {
+    const res = await request(app).get("/clients/lookup?first_name=John");
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for invalid phone format", async () => {
+    const res = await request(app).get(
+      "/clients/lookup?first_name=John&last_name=Doe&phone=bad",
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 404 when client is not found", async () => {
+    Client.findByNameAndPhone.mockResolvedValue(null);
+    const res = await request(app).get(
+      "/clients/lookup?first_name=John&last_name=Doe&phone=1234567890",
+    );
+    expect(res.status).toBe(404);
+  });
+});
+
+//
 // POST /clients
 //
 describe("POST /clients", () => {
