@@ -17,6 +17,7 @@ import stylistAvailabilityRoutes from "./routes/stylistAvailability.routes.js";
 import stylistTimeOffRoutes from "./routes/stylistTimeOff.routes.js";
 import userRoutes from "./routes/users.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import appointmentConfirmationRoutes from "./routes/appointmentConfirmation.routes.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 
 dotenv.config();
@@ -84,6 +85,7 @@ app.use("/api/stylists", stylistRoutes);
 app.use("/api/availability", stylistAvailabilityRoutes);
 app.use("/api/timeOffs", stylistTimeOffRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/appointmentConfirmations", appointmentConfirmationRoutes);
 app.use("/auth", authRoutes);
 
 app.use(errorHandler);
