@@ -55,6 +55,23 @@ export async function getConfigurationsByService(req, res) {
 }
 
 /**
+ * GET /service-configurations/service/:serviceId/grouped-by-weight-class
+ * List all configs for a service grouped by weight_class_id
+ */
+export async function getConfigurationsByServiceGroupedByWeightClass(req, res) {
+  try {
+    const { serviceId } = req.params;
+    const rows = await Config.findByServiceGroupedByWeightClass(serviceId);
+    return res.status(200).json(rows);
+  } catch (err) {
+    if (err.message.includes("invalid")) {
+      return res.status(400).json({ error: err.message });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+/**
  * POST /service-configurations
  */
 export async function createConfiguration(req, res) {

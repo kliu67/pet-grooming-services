@@ -96,6 +96,40 @@ describe("Service Configuration Routes", () => {
   });
 
   /* =====================================================
+     GET /service-configurations/service/:serviceId/grouped-by-weight-class
+  ===================================================== */
+  describe("GET /service-configurations/service/:serviceId/grouped-by-weight-class", () => {
+    it("returns one config row per weight class for a service", async () => {
+      const groupedRows = [
+        { id: 1, breed_id: 1, service_id: 2, weight_class_id: 1 },
+        { id: 3, breed_id: 3, service_id: 2, weight_class_id: 2 },
+      ];
+
+      Config.findByServiceGroupedByWeightClass.mockResolvedValue(groupedRows);
+
+      const res = await request(app).get(
+        "/service-configurations/service/2/grouped-by-weight-class"
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(groupedRows);
+      expect(Config.findByServiceGroupedByWeightClass).toHaveBeenCalledWith("2");
+    });
+
+    it("returns 400 for invalid service id", async () => {
+      Config.findByServiceGroupedByWeightClass.mockRejectedValue(
+        new Error("invalid service_id")
+      );
+
+      const res = await request(app).get(
+        "/service-configurations/service/bad/grouped-by-weight-class"
+      );
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  /* =====================================================
      POST /service-configurations
   ===================================================== */
   describe("POST /service-configurations", () => {
