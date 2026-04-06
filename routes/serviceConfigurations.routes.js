@@ -3,6 +3,7 @@ import {
   getConfiguration,
   getAllConfigurations,
   getConfigurationsByService,
+  getConfigurationsByServiceGroupedByWeightClass,
   createConfiguration,
   updateConfiguration,
   deleteConfiguration,
@@ -27,6 +28,12 @@ serviceConfigrationRoutes.get("/", (req, res) => {
 
 /* List all configurations for a service */
 serviceConfigrationRoutes.get("/service/:serviceId", getConfigurationsByService);
+
+/* List all configurations for a service grouped by weight class */
+serviceConfigrationRoutes.get(
+  "/service/:serviceId/grouped-by-weight-class",
+  getConfigurationsByServiceGroupedByWeightClass
+);
 
 /* Create */
 serviceConfigrationRoutes.post("/", createConfiguration);

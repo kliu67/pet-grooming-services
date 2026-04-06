@@ -238,3 +238,27 @@ export async function findByService(serviceId) {
 
   return rows;
 }
+
+/**
+ * List all configs for a service grouped by weight class
+ */
+export async function findByServiceGroupedByWeightClass(serviceId) {
+  const srv = validateId(serviceId, 'service_id');
+
+  const { rows } = await pool.query(
+    `
+    SELECT DISTINCT ON (sc.weight_class_id)
+           sc.id, sc.breed_id, sc.service_id, sc.weight_class_id,
+           sc.price, sc.duration_minutes, sc.buffer_minutes, sc.is_active,
+           wc.label AS weight_class_label,
+           jsonb_build_array(lower(wc.weight_range), upper(wc.weight_range)) AS weight_class_range
+    FROM service_configurations sc
+    JOIN weight_classes wc ON wc.id = sc.weight_class_id
+    WHERE sc.service_id = $1
+    ORDER BY sc.weight_class_id, sc.breed_id
+    `,
+    [srv]
+  );
+
+  return rows;
+}

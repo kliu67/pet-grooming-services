@@ -16,6 +16,7 @@ import {
   remove,
   getActiveConfig,
   findByService,
+  findByServiceGroupedByWeightClass,
 } from '../serviceConfigurations.model.js';
 
 beforeEach(() => {
@@ -206,6 +207,52 @@ describe('findByService', () => {
 
   it('throws on invalid service id', async () => {
     await expect(findByService(0))
+      .rejects
+      .toThrow('invalid service_id');
+  });
+});
+
+//
+// FIND BY SERVICE GROUPED BY WEIGHT CLASS
+//
+describe('findByServiceGroupedByWeightClass', () => {
+  it('returns one configuration row per weight_class_id with weight class metadata', async () => {
+    const mockRows = [
+      {
+        id: 1,
+        breed_id: 1,
+        service_id: 2,
+        weight_class_id: 1,
+        price: 10,
+        duration_minutes: 30,
+        buffer_minutes: 0,
+        is_active: true,
+        weight_class_label: 'small',
+        weight_class_range: [0, 9.99],
+      },
+      {
+        id: 3,
+        breed_id: 3,
+        service_id: 2,
+        weight_class_id: 2,
+        price: 20,
+        duration_minutes: 45,
+        buffer_minutes: 5,
+        is_active: true,
+        weight_class_label: 'medium',
+        weight_class_range: [10, 19.99],
+      },
+    ];
+
+    pool.query.mockResolvedValue({ rows: mockRows });
+
+    const result = await findByServiceGroupedByWeightClass(2);
+
+    expect(result).toEqual(mockRows);
+  });
+
+  it('throws on invalid service id', async () => {
+    await expect(findByServiceGroupedByWeightClass(0))
       .rejects
       .toThrow('invalid service_id');
   });
