@@ -747,13 +747,31 @@ export async function bookFromScratch({
     if (!client) {
       const createdClientRes = await dbClient.query(
         `
-        INSERT INTO clients (first_name, last_name, phone)
-        VALUES ($1, $2, $3)
-        RETURNING id, first_name, last_name, phone
+        INSERT INTO clients (first_name, last_name, email, phone)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, first_name, last_name, email, phone
         `,
-        [first_name.trim(), last_name.trim(), phone.trim()],
+        [first_name.trim(), last_name.trim(), email, phone.trim()],
       );
       client = createdClientRes.rows[0];
+    } else if (email && client.email !== email) {
+      try {
+        const updatedClientRes = await dbClient.query(
+          `
+          UPDATE clients
+          SET email = $1
+          WHERE id = $2
+          RETURNING id, first_name, last_name, email, phone
+          `,
+          [email, client.id],
+        );
+        client = updatedClientRes.rows[0] ?? client;
+      } catch (err) {
+        if (err.code === "23505") {
+          throw new Error("email already exists");
+        }
+        throw err;
+      }
     }
 
     const pets = await getPetsByOwner(dbClient, client.id);

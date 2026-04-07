@@ -670,6 +670,148 @@ describe("bookFromScratch()", () => {
     });
     expect(mockRelease).toHaveBeenCalled();
   });
+
+  it("creates a new client with optional email when no existing client is found", async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // client lookup - not found
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 7,
+            first_name: "Kai",
+            last_name: "Li",
+            email: "kai@example.com",
+            phone: "1234567890",
+          },
+        ],
+      }) // create client
+      .mockResolvedValueOnce({ rows: [] }) // owner pets
+      .mockResolvedValueOnce({
+        rows: [{ id: 10, name: "Mochi", breed: 2, owner: 7, weight_class_id: 1 }],
+      }) // create pet
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
+      .mockResolvedValueOnce({ rows: [{ id: 3, name: "Full Groom" }] }) // service exists
+      .mockResolvedValueOnce({ rows: [{ id: 2, name: "Poodle" }] }) // breed exists
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 20,
+            price: 85,
+            duration_minutes: 60,
+            buffer_minutes: 15,
+            service_name: "Full Groom",
+          },
+        ],
+      }) // active service configuration
+      .mockResolvedValueOnce({ rows: availabilityRows }) // availability
+      .mockResolvedValueOnce({ rows: [] }) // time off
+      .mockResolvedValueOnce({ rows: [] }) // overlap
+      .mockResolvedValueOnce({
+        rows: [{ id: 501, service_id: 3, status: "booked" }],
+      }) // insert appointment
+      .mockResolvedValueOnce(); // COMMIT
+
+    const result = await bookFromScratch({
+      first_name: "Kai",
+      last_name: "Li",
+      phone: "1234567890",
+      email: "kai@example.com",
+      pet_name: "Mochi",
+      breed_id: 2,
+      weight_class_id: 1,
+      service_id: 3,
+      stylist_id: 2,
+      start_time: FUTURE_START,
+    });
+
+    expect(mockQuery).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining("INSERT INTO clients (first_name, last_name, email, phone)"),
+      ["Kai", "Li", "kai@example.com", "1234567890"],
+    );
+
+    expect(result).toEqual({
+      id: 501,
+      service_id: 3,
+      status: "booked",
+      service_name: "Full Groom",
+      breed_name: "Poodle",
+    });
+    expect(mockRelease).toHaveBeenCalled();
+  });
+
+  it("updates existing client email when supplied email is non-null and different", async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 1,
+            first_name: "Kai",
+            last_name: "Li",
+            email: "old@example.com",
+            phone: "1234567890",
+          },
+        ],
+      }) // client lookup - found
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 1,
+            first_name: "Kai",
+            last_name: "Li",
+            email: "new@example.com",
+            phone: "1234567890",
+          },
+        ],
+      }) // update client email
+      .mockResolvedValueOnce({ rows: [] }) // owner pets
+      .mockResolvedValueOnce({
+        rows: [{ id: 10, name: "Mochi", breed: 2, owner: 1, weight_class_id: 1 }],
+      }) // create pet
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
+      .mockResolvedValueOnce({ rows: [{ id: 3, name: "Full Groom" }] }) // service exists
+      .mockResolvedValueOnce({ rows: [{ id: 2, name: "Poodle" }] }) // breed exists
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 20,
+            price: 85,
+            duration_minutes: 60,
+            buffer_minutes: 15,
+            service_name: "Full Groom",
+          },
+        ],
+      }) // active service configuration
+      .mockResolvedValueOnce({ rows: availabilityRows }) // availability
+      .mockResolvedValueOnce({ rows: [] }) // time off
+      .mockResolvedValueOnce({ rows: [] }) // overlap
+      .mockResolvedValueOnce({
+        rows: [{ id: 502, service_id: 3, status: "booked" }],
+      }) // insert appointment
+      .mockResolvedValueOnce(); // COMMIT
+
+    await bookFromScratch({
+      first_name: "Kai",
+      last_name: "Li",
+      phone: "1234567890",
+      email: "new@example.com",
+      pet_name: "Mochi",
+      breed_id: 2,
+      weight_class_id: 1,
+      service_id: 3,
+      stylist_id: 2,
+      start_time: FUTURE_START,
+    });
+
+    expect(mockQuery).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining("UPDATE clients"),
+      ["new@example.com", 1],
+    );
+    expect(mockRelease).toHaveBeenCalled();
+  });
 });
 
 describe("remove()", () => {
