@@ -109,7 +109,24 @@ async function assertServiceExists(dbClient, serviceId) {
   if (!serviceRes.rows[0]) {
     throw new Error("service not found");
   }
-  return;
+  return serviceRes.rows[0];
+}
+
+async function assertBreedExists(dbClient, breedId) {
+  const breedRes = await dbClient.query(
+    `
+      SELECT id, name
+      FROM breeds
+      WHERE id = $1
+    `,
+    [breedId],
+  );
+
+  if (!breedRes.rows[0]) {
+    throw new Error("breed not found");
+  }
+
+  return breedRes.rows[0];
 }
 
 function assertStylistIsAvailable(availabilityData, stylistId, start, end) {
@@ -762,7 +779,8 @@ export async function bookFromScratch({
     }
 
     await assertStylistExists(dbClient, stylistId);
-    await assertServiceExists(dbClient, serviceId);
+    const service = await assertServiceExists(dbClient, serviceId);
+    const breed = await assertBreedExists(dbClient, breedId);
 
     const config = await getActiveServiceConfigurationByFKs(
       dbClient,
@@ -814,7 +832,11 @@ export async function bookFromScratch({
     );
 
     await dbClient.query("COMMIT");
-    return insertRes.rows[0];
+    return {
+      ...insertRes.rows[0],
+      service_name: service.name,
+      breed_name: breed.name,
+    };
   } catch (err) {
     await dbClient.query("ROLLBACK");
     throw mapBookingDbError(err);

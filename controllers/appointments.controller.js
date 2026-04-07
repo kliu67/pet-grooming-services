@@ -1,4 +1,5 @@
 import * as Appointment from "../models/appointments.model.js";
+import { sendAppointmentCreatedEmail } from "../services/appointmentEmail.service.js";
 
 /**
  * GEt /service-configurations
@@ -93,7 +94,30 @@ export async function bookAppointment(req, res) {
 export async function bookAppointmentFromScratch(req, res) {
   try {
     const created = await Appointment.bookFromScratch(req.body);
-    return res.status(201).json(shapeAppointment(created));
+    const shapedAppointment = shapeAppointment(created);
+
+    try {
+      await sendAppointmentCreatedEmail({
+        to: req.body.email,
+        customerName: `${req.body.first_name ?? ""} ${req.body.last_name ?? ""}`.trim(),
+        petName: req.body.pet_name,
+        serviceName:
+          shapedAppointment.service_name ??
+          shapedAppointment.service_name_snapshot,
+        breedName:
+          shapedAppointment.breed_name ?? shapedAppointment.breed_name_snapshot,
+        startTime: shapedAppointment.start_time,
+        appointmentNumber: shapedAppointment.appointment_number,
+      });
+    } catch (emailErr) {
+      // Email errors should not fail booking success.
+      console.error(
+        "[email] Failed to send appointment booking email:",
+        emailErr.message,
+      );
+    }
+
+    return res.status(201).json(shapedAppointment);
   } catch (err) {
     if (
       err.message.includes("invalid") ||

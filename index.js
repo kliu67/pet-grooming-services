@@ -19,6 +19,7 @@ import userRoutes from "./routes/users.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import appointmentConfirmationRoutes from "./routes/appointmentConfirmation.routes.js";
 import { errorHandler } from "./middleware/error.middleware.js";
+import { verifyEmailTransport } from "./services/appointmentEmail.service.js";
 
 dotenv.config();
 
@@ -72,6 +73,28 @@ app.use(
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
+});
+
+app.get("/api/health/email", async (req, res) => {
+  try {
+    const result = await verifyEmailTransport();
+    if (!result.ok) {
+      return res.status(503).json({
+        status: "error",
+        service: "email",
+        reason: result.reason,
+        message: result.message,
+      });
+    }
+
+    return res.status(200).json({ status: "ok", service: "email" });
+  } catch (err) {
+    return res.status(500).json({
+      status: "error",
+      service: "email",
+      message: err.message,
+    });
+  }
 });
 
 app.use("/api/clients", clientRoutes);
