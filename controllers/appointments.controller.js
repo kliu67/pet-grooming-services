@@ -78,7 +78,8 @@ export async function bookAppointment(req, res) {
       err.message.includes("not found") ||
       err.message.includes("configuration") ||
       err.message.includes("does not belong") ||
-      err.message.includes("not available")
+      err.message.includes("not available") ||
+      err.message.includes("permitted")
     ) {
       return res.status(400).json({ error: err.message });
     }
@@ -124,7 +125,8 @@ export async function bookAppointmentFromScratch(req, res) {
       err.message.includes("not found") ||
       err.message.includes("configuration") ||
       err.message.includes("does not belong") ||
-      err.message.includes("not available")
+      err.message.includes("not available") ||
+      err.message.includes("permitted")
     ) {
       return res.status(400).json({ error: err.message });
     }

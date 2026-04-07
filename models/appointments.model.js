@@ -115,7 +115,7 @@ async function assertServiceExists(dbClient, serviceId) {
 async function assertBreedExists(dbClient, breedId) {
   const breedRes = await dbClient.query(
     `
-      SELECT id, name
+      SELECT id, name, permitted
       FROM breeds
       WHERE id = $1
     `,
@@ -124,6 +124,10 @@ async function assertBreedExists(dbClient, breedId) {
 
   if (!breedRes.rows[0]) {
     throw new Error("breed not found");
+  }
+
+  if (breedRes.rows[0].permitted === false) {
+    throw new Error("breed is not permitted for booking");
   }
 
   return breedRes.rows[0];

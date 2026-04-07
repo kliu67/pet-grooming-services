@@ -620,7 +620,13 @@ describe("bookFromScratch()", () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li", phone: "1234567890" }],
+        rows: [{
+          id: 1,
+          first_name: "Kai",
+          last_name: "Li",
+          email: "kai@example.com",
+          phone: "1234567890",
+        }],
       }) // client lookup
       .mockResolvedValueOnce({ rows: [] }) // owner pets
       .mockResolvedValueOnce({
@@ -810,6 +816,44 @@ describe("bookFromScratch()", () => {
       expect.stringContaining("UPDATE clients"),
       ["new@example.com", 1],
     );
+    expect(mockRelease).toHaveBeenCalled();
+  });
+
+  it("throws when breed is not permitted for booking", async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 1,
+          first_name: "Kai",
+          last_name: "Li",
+          email: "kai@example.com",
+          phone: "1234567890",
+        }],
+      }) // client lookup
+      .mockResolvedValueOnce({
+        rows: [{ id: 10, name: "Mochi", breed: 2, owner: 1, weight_class_id: 1 }],
+      }) // owner pets
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
+      .mockResolvedValueOnce({ rows: [{ id: 3, name: "Full Groom" }] }) // service exists
+      .mockResolvedValueOnce({ rows: [{ id: 2, name: "Poodle", permitted: false }] }) // breed exists but not permitted
+      .mockResolvedValueOnce(); // ROLLBACK
+
+    await expect(
+      bookFromScratch({
+        first_name: "Kai",
+        last_name: "Li",
+        phone: "1234567890",
+        email: "kai@example.com",
+        pet_name: "Mochi",
+        breed_id: 2,
+        weight_class_id: 1,
+        service_id: 3,
+        stylist_id: 2,
+        start_time: FUTURE_START,
+      }),
+    ).rejects.toThrow("breed is not permitted for booking");
+
     expect(mockRelease).toHaveBeenCalled();
   });
 });

@@ -216,6 +216,28 @@ describe("Appointment Routes", () => {
       expect(res.status).toBe(400);
       expect(res.body.error).toBe("invalid first_name");
     });
+
+    it("returns 400 when breed is not permitted", async () => {
+      Appointment.bookFromScratch.mockRejectedValue(
+        new Error("breed is not permitted for booking"),
+      );
+
+      const res = await request(app).post("/appointments/from-scratch").send({
+        first_name: "Kai",
+        last_name: "Li",
+        phone: "1234567890",
+        email: "kai@example.com",
+        pet_name: "Mochi",
+        breed_id: 2,
+        weight_class_id: 1,
+        service_id: 3,
+        stylist_id: 2,
+        start_time: "2026-01-01T10:00:00Z",
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("breed is not permitted for booking");
+    });
   });
 
   describe("GET /appointments/:id", () => {
