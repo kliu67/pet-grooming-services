@@ -15,6 +15,7 @@ vi.mock("../../db.js", () => ({
 import { pool } from "../../db.js";
 import {
   book,
+  bookFromScratch,
   findById,
   cancel,
   remove,
@@ -610,6 +611,63 @@ describe("book()", () => {
         start_time: start,
       }),
     ).rejects.toThrow("start time and end time must be on the same day");
+    expect(mockRelease).toHaveBeenCalled();
+  });
+});
+
+describe("bookFromScratch()", () => {
+  it("returns appointment enriched with service_name and breed_name", async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li", phone: "1234567890" }],
+      }) // client lookup
+      .mockResolvedValueOnce({ rows: [] }) // owner pets
+      .mockResolvedValueOnce({
+        rows: [{ id: 10, name: "Mochi", breed: 2, owner: 1, weight_class_id: 1 }],
+      }) // create pet
+      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
+      .mockResolvedValueOnce({ rows: [{ id: 3, name: "Full Groom" }] }) // service exists
+      .mockResolvedValueOnce({ rows: [{ id: 2, name: "Poodle" }] }) // breed exists
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 20,
+            price: 85,
+            duration_minutes: 60,
+            buffer_minutes: 15,
+            service_name: "Full Groom",
+          },
+        ],
+      }) // active service configuration
+      .mockResolvedValueOnce({ rows: availabilityRows }) // availability
+      .mockResolvedValueOnce({ rows: [] }) // time off
+      .mockResolvedValueOnce({ rows: [] }) // overlap
+      .mockResolvedValueOnce({
+        rows: [{ id: 500, service_id: 3, status: "booked" }],
+      }) // insert appointment
+      .mockResolvedValueOnce(); // COMMIT
+
+    const result = await bookFromScratch({
+      first_name: "Kai",
+      last_name: "Li",
+      phone: "1234567890",
+      email: "kai@example.com",
+      pet_name: "Mochi",
+      breed_id: 2,
+      weight_class_id: 1,
+      service_id: 3,
+      stylist_id: 2,
+      start_time: FUTURE_START,
+    });
+
+    expect(result).toEqual({
+      id: 500,
+      service_id: 3,
+      status: "booked",
+      service_name: "Full Groom",
+      breed_name: "Poodle",
+    });
     expect(mockRelease).toHaveBeenCalled();
   });
 });
