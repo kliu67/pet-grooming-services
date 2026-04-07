@@ -77,6 +77,17 @@ function setDuration(service, weight) {
   }
 }
 
+function setBuffer(service){
+  switch(service){
+    case "Bath":
+    case "Basic grooming":
+    case "Full grooming":
+        return DURATIONS.TEN_MINUTES;
+    default:
+      return 0;
+  }
+}
+
 function setIsActive(breed, noServiceList) {
   return !noServiceList.includes(breed);
 }
@@ -107,6 +118,7 @@ async function seedServiceConfigurations() {
             weight_class_id: wc.id,
             price: setPrice(service.name, wc.label),
             duration_minutes: setDuration(service.name, wc.label),
+            buffer_minutes: setBuffer(service.name),
             is_active: setIsActive(breed.name, noServiceList)
           });
         }
@@ -115,8 +127,8 @@ async function seedServiceConfigurations() {
 
     for (const c of configList) {
       await pool.query(
-        `INSERT INTO service_configurations (breed_id, service_id, weight_class_id, price, duration_minutes, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO service_configurations (breed_id, service_id, weight_class_id, price, duration_minutes, is_active, buffer_minutes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT DO NOTHING`,
         [
           c.breed_id,
@@ -124,7 +136,8 @@ async function seedServiceConfigurations() {
           c.weight_class_id,
           c.price,
           c.duration_minutes,
-          c.is_active
+          c.is_active,
+          c.buffer_minutes
         ]
       );
     }
