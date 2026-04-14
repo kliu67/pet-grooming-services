@@ -29,9 +29,8 @@ export async function findByAppointmentId(appointmentId) {
       p.name AS pet_name,
       p.species AS pet_species,
       p.uuid AS pet_uuid,
-
-      b.id AS breed_id,
-      b.name AS breed_name,
+      p.breed AS breed_name,
+      
 
       wc.id AS weight_class_id,
       wc.label AS weight_class_label,
@@ -51,7 +50,6 @@ export async function findByAppointmentId(appointmentId) {
     FROM appointments a
     LEFT JOIN clients c ON c.id = a.client_id
     LEFT JOIN pets p ON p.id = a.pet_id
-    LEFT JOIN breeds b ON b.id = p.breed
     LEFT JOIN weight_classes wc ON wc.id = p.weight_class_id
     LEFT JOIN services s ON s.id = a.service_id
     LEFT JOIN stylists st ON st.id = a.stylist_id

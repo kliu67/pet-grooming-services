@@ -136,6 +136,38 @@ describe("Pet Routes", () => {
       expect(res.body.error).toContain("weightClassId");
       expect(Pet.create).not.toHaveBeenCalled();
     });
+
+    it("creates a pet when breed is omitted", async () => {
+      const newPet = {
+        id: 2,
+        name: "Mochi",
+        pet_species: "dog",
+        breed: null,
+        owner: 1,
+        weight_class_id: 2,
+      };
+
+      Pet.create.mockResolvedValue(newPet);
+
+      const res = await request(app)
+        .post("/pets")
+        .send({
+          name: "Mochi",
+          pet_species: "dog",
+          owner: 1,
+          weightClassId: 2,
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual(newPet);
+      expect(Pet.create).toHaveBeenCalledWith({
+        name: "Mochi",
+        pet_species: "dog",
+        breed: undefined,
+        owner: 1,
+        weightClassId: 2,
+      });
+    });
   });
 
   /* =====================================================

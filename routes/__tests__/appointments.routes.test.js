@@ -131,7 +131,7 @@ describe("Appointment Routes", () => {
         phone: "1234567890",
         email: "kai@example.com",
         pet_name: "Mochi",
-        breed_id: 2,
+        breed: "Poodle",
         weight_class_id: 1,
         service_id: 3,
         stylist_id: 2,
@@ -174,7 +174,7 @@ describe("Appointment Routes", () => {
         phone: "1234567890",
         email: "kai@example.com",
         pet_name: "Mochi",
-        breed_id: 2,
+        breed: "Poodle",
         weight_class_id: 1,
         service_id: 3,
         stylist_id: 2,
@@ -196,7 +196,7 @@ describe("Appointment Routes", () => {
         last_name: "Li",
         phone: "1234567890",
         pet_name: "Mochi",
-        breed_id: 2,
+        breed: "Poodle",
         weight_class_id: 1,
         service_id: 3,
         stylist_id: 2,
@@ -217,9 +217,9 @@ describe("Appointment Routes", () => {
       expect(res.body.error).toBe("invalid first_name");
     });
 
-    it("returns 400 when breed is not permitted", async () => {
+    it("returns 400 when breed is invalid", async () => {
       Appointment.bookFromScratch.mockRejectedValue(
-        new Error("breed is not permitted for booking"),
+        new Error("invalid breed"),
       );
 
       const res = await request(app).post("/appointments/from-scratch").send({
@@ -228,7 +228,7 @@ describe("Appointment Routes", () => {
         phone: "1234567890",
         email: "kai@example.com",
         pet_name: "Mochi",
-        breed_id: 2,
+        breed: "Unknown Breed",
         weight_class_id: 1,
         service_id: 3,
         stylist_id: 2,
@@ -236,7 +236,58 @@ describe("Appointment Routes", () => {
       });
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toBe("breed is not permitted for booking");
+      expect(res.body.error).toBe("invalid breed");
+    });
+
+    it("books appointment from scratch when breed is omitted", async () => {
+      const mockAppt = {
+        id: 103,
+        client_id: 1,
+        pet_id: 12,
+        service_id: 3,
+        service_name: "Full Groom",
+        breed_name: null,
+        stylist_id: 2,
+        status: "booked",
+      };
+
+      Appointment.bookFromScratch.mockResolvedValue(mockAppt);
+      sendAppointmentCreatedEmail.mockResolvedValue(undefined);
+
+      const res = await request(app).post("/appointments/from-scratch").send({
+        first_name: "Kai",
+        last_name: "Li",
+        phone: "1234567890",
+        email: "kai@example.com",
+        pet_name: "Mochi",
+        weight_class_id: 1,
+        service_id: 3,
+        stylist_id: 2,
+        start_time: "2026-01-01T10:00:00Z",
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual(mockAppt);
+      expect(Appointment.bookFromScratch).toHaveBeenCalledWith({
+        first_name: "Kai",
+        last_name: "Li",
+        phone: "1234567890",
+        email: "kai@example.com",
+        pet_name: "Mochi",
+        weight_class_id: 1,
+        service_id: 3,
+        stylist_id: 2,
+        start_time: "2026-01-01T10:00:00Z",
+      });
+      expect(sendAppointmentCreatedEmail).toHaveBeenCalledWith({
+        to: "kai@example.com",
+        customerName: "Kai Li",
+        petName: "Mochi",
+        serviceName: "Full Groom",
+        breedName: undefined,
+        startTime: undefined,
+        appointmentNumber: undefined,
+      });
     });
   });
 

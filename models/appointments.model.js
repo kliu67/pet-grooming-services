@@ -112,10 +112,10 @@ async function assertServiceExists(dbClient, serviceId) {
   return serviceRes.rows[0];
 }
 
-async function assertBreedExists(dbClient, breedId) {
+async function getBreedById(dbClient, breedId) {
   const breedRes = await dbClient.query(
     `
-      SELECT id, name, permitted
+      SELECT id, name
       FROM breeds
       WHERE id = $1
     `,
@@ -126,11 +126,21 @@ async function assertBreedExists(dbClient, breedId) {
     throw new Error("breed not found");
   }
 
-  if (breedRes.rows[0].permitted === false) {
-    throw new Error("breed is not permitted for booking");
-  }
-
   return breedRes.rows[0];
+}
+
+async function getBreedByName(dbClient, breedName) {
+  const breedRes = await dbClient.query(
+    `
+      SELECT id, name
+      FROM breeds
+      WHERE LOWER(name) = LOWER($1)
+      LIMIT 1
+    `,
+    [breedName],
+  );
+
+  return breedRes.rows[0] ?? null;
 }
 
 function assertStylistIsAvailable(availabilityData, stylistId, start, end) {
@@ -363,7 +373,6 @@ async function getActiveServiceConfiguration(dbClient, serviceConfigurationId) {
 async function getActiveServiceConfigurationByFKs(
   dbClient,
   service_id,
-  breed_id,
   weight_class_id,
 ) {
   const cfgRes = await dbClient.query(
@@ -371,26 +380,23 @@ async function getActiveServiceConfigurationByFKs(
      SELECT sc.id, sc.price, sc.duration_minutes, sc.buffer_minutes, s.name AS service_name
     FROM service_configurations sc
     JOIN services s ON s.id = sc.service_id
-    WHERE sc.service_id = $1 AND sc.breed_id = $2 AND sc.weight_class_id = $3
+    WHERE sc.service_id = $1 AND sc.weight_class_id = $2
       AND sc.is_active = TRUE
     `,
-    [service_id, breed_id, weight_class_id],
+    [service_id, weight_class_id],
   );
   if (!cfgRes.rows[0]) {
-    throw new Error(
-      "service configuration not found with petId breedId and serviceId",
-    );
+    throw new Error("service configuration not found");
   }
   return cfgRes.rows[0];
 }
 
 async function getConfigByServiceAndPet(dbClient, service_id, pet_id) {
   const pet = await getPet(dbClient, pet_id);
-  const { breed: breed_id, weight_class_id } = pet;
+  const { weight_class_id } = pet;
   return await getActiveServiceConfigurationByFKs(
     dbClient,
     service_id,
-    breed_id,
     weight_class_id,
   );
 }
@@ -695,7 +701,7 @@ export async function bookFromScratch({
   phone,
   email,
   pet_name,
-  breed_id,
+  breed = null,
   weight_class_id,
   service_id,
   stylist_id,
@@ -726,7 +732,17 @@ export async function bookFromScratch({
     throw new Error("invalid pet_name");
   }
 
-  const breedId = validateId(breed_id, "breed_id");
+  let normalizedBreed = null;
+  if (breed !== null && breed !== undefined) {
+    if (typeof breed !== "string") {
+      throw new Error("invalid breed");
+    }
+    normalizedBreed = breed.trim();
+    if (!normalizedBreed) {
+      normalizedBreed = null;
+    }
+  }
+
   const weightClassId = validateId(weight_class_id, "weight_class_id");
   const serviceId = validateId(service_id, "service_id");
   const stylistId = validateId(stylist_id, "stylist_id");
@@ -778,36 +794,50 @@ export async function bookFromScratch({
       }
     }
 
+    // let resolvedBreedId = null;
+    // let resolvedBreedName = null;
+    // if (normalizedBreed) {
+    //   const breedRow = await getBreedByName(dbClient, normalizedBreed);
+    //   if (!breedRow) {
+    //     throw new Error("invalid breed");
+    //   }
+    //   resolvedBreedId = breedRow.id;
+    //   resolvedBreedName = breedRow.name;
+    // }
+
     const pets = await getPetsByOwner(dbClient, client.id);
 
     const normalizedPetName = pet_name.trim().toLowerCase();
-    let pet = pets.find(
-      (p) =>
-        p.name?.trim().toLowerCase() === normalizedPetName &&
-        Number(p.breed) === breedId &&
-        Number(p.weight_class_id) === weightClassId,
-    );
+    let pet =  pets.find(
+        (p) =>
+          p.name?.trim().toLowerCase() === normalizedPetName &&
+          Number(p.weight_class_id) === weightClassId,
+      );
 
     if (!pet) {
+
       const createdPetRes = await dbClient.query(
         `
         INSERT INTO pets (name, breed, owner, weight_class_id)
         VALUES ($1, $2, $3, $4)
         RETURNING id, name, breed, owner, weight_class_id
         `,
-        [pet_name.trim(), breedId, client.id, weightClassId],
+        [pet_name.trim(), normalizedBreed, client.id, weightClassId],
       );
       pet = createdPetRes.rows[0];
     }
 
+    // if (!resolvedBreedName) {
+    //   const breedRow = await getBreedById(dbClient, pet.breed);
+    //   resolvedBreedName = breedRow.name;
+    // }
+
     await assertStylistExists(dbClient, stylistId);
     const service = await assertServiceExists(dbClient, serviceId);
-    const breed = await assertBreedExists(dbClient, breedId);
 
     const config = await getActiveServiceConfigurationByFKs(
       dbClient,
       serviceId,
-      breedId,
       weightClassId,
     );
 
@@ -857,7 +887,7 @@ export async function bookFromScratch({
     return {
       ...insertRes.rows[0],
       service_name: service.name,
-      breed_name: breed.name,
+      breed_name: normalizedBreed,
     };
   } catch (err) {
     await dbClient.query("ROLLBACK");

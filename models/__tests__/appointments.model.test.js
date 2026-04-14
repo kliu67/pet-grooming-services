@@ -617,42 +617,66 @@ describe("book()", () => {
 
 describe("bookFromScratch()", () => {
   it("returns appointment enriched with service_name and breed_name", async () => {
-    mockQuery
-      .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({
-        rows: [{
-          id: 1,
-          first_name: "Kai",
-          last_name: "Li",
-          email: "kai@example.com",
-          phone: "1234567890",
-        }],
-      }) // client lookup
-      .mockResolvedValueOnce({ rows: [] }) // owner pets
-      .mockResolvedValueOnce({
-        rows: [{ id: 10, name: "Mochi", breed: 2, owner: 1, weight_class_id: 1 }],
-      }) // create pet
-      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
-      .mockResolvedValueOnce({ rows: [{ id: 3, name: "Full Groom" }] }) // service exists
-      .mockResolvedValueOnce({ rows: [{ id: 2, name: "Poodle" }] }) // breed exists
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            id: 20,
-            price: 85,
-            duration_minutes: 60,
-            buffer_minutes: 15,
-            service_name: "Full Groom",
-          },
-        ],
-      }) // active service configuration
-      .mockResolvedValueOnce({ rows: availabilityRows }) // availability
-      .mockResolvedValueOnce({ rows: [] }) // time off
-      .mockResolvedValueOnce({ rows: [] }) // overlap
-      .mockResolvedValueOnce({
-        rows: [{ id: 500, service_id: 3, status: "booked" }],
-      }) // insert appointment
-      .mockResolvedValueOnce(); // COMMIT
+    mockQuery.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") {
+        return {};
+      }
+      if (text.includes("FROM clients") && text.includes("LOWER(first_name)")) {
+        return {
+          rows: [{
+            id: 1,
+            first_name: "Kai",
+            last_name: "Li",
+            email: "kai@example.com",
+            phone: "1234567890",
+          }],
+        };
+      }
+      if (text.includes("FROM breeds") && text.includes("LOWER(name)")) {
+        return { rows: [{ id: 2, name: "Poodle" }] };
+      }
+      if (text.includes("FROM pets") && text.includes("WHERE owner = $1")) {
+        return { rows: [] };
+      }
+      if (text.includes("INSERT INTO pets")) {
+        return {
+          rows: [{ id: 10, name: "Mochi", breed: 2, owner: 1, weight_class_id: 1 }],
+        };
+      }
+      if (text.includes("FROM stylists")) {
+        return { rows: [{ id: 2 }] };
+      }
+      if (text.includes("FROM services") && text.includes("WHERE id = $1")) {
+        return { rows: [{ id: 3, name: "Full Groom" }] };
+      }
+      if (text.includes("FROM service_configurations sc")) {
+        return {
+          rows: [
+            {
+              id: 20,
+              price: 85,
+              duration_minutes: 60,
+              buffer_minutes: 15,
+              service_name: "Full Groom",
+            },
+          ],
+        };
+      }
+      if (text.includes("FROM stylist_availability")) {
+        return { rows: availabilityRows };
+      }
+      if (text.includes("FROM stylist_time_offs")) {
+        return { rows: [] };
+      }
+      if (text.includes("FROM appointments")) {
+        return { rows: [] };
+      }
+      if (text.includes("INSERT INTO appointments")) {
+        return { rows: [{ id: 500, service_id: 3, status: "booked" }] };
+      }
+      return { rows: [] };
+    });
 
     const result = await bookFromScratch({
       first_name: "Kai",
@@ -660,7 +684,7 @@ describe("bookFromScratch()", () => {
       phone: "1234567890",
       email: "kai@example.com",
       pet_name: "Mochi",
-      breed_id: 2,
+      breed: "Poodle",
       weight_class_id: 1,
       service_id: 3,
       stylist_id: 2,
@@ -678,45 +702,63 @@ describe("bookFromScratch()", () => {
   });
 
   it("creates a new client with optional email when no existing client is found", async () => {
-    mockQuery
-      .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({ rows: [] }) // client lookup - not found
-      .mockResolvedValueOnce({
-        rows: [
-          {
+    mockQuery.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") {
+        return {};
+      }
+      if (text.includes("FROM clients") && text.includes("LOWER(first_name)")) {
+        return { rows: [] };
+      }
+      if (text.includes("INSERT INTO clients")) {
+        return {
+          rows: [{
             id: 7,
             first_name: "Kai",
             last_name: "Li",
             email: "kai@example.com",
             phone: "1234567890",
-          },
-        ],
-      }) // create client
-      .mockResolvedValueOnce({ rows: [] }) // owner pets
-      .mockResolvedValueOnce({
-        rows: [{ id: 10, name: "Mochi", breed: 2, owner: 7, weight_class_id: 1 }],
-      }) // create pet
-      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
-      .mockResolvedValueOnce({ rows: [{ id: 3, name: "Full Groom" }] }) // service exists
-      .mockResolvedValueOnce({ rows: [{ id: 2, name: "Poodle" }] }) // breed exists
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            id: 20,
-            price: 85,
-            duration_minutes: 60,
-            buffer_minutes: 15,
-            service_name: "Full Groom",
-          },
-        ],
-      }) // active service configuration
-      .mockResolvedValueOnce({ rows: availabilityRows }) // availability
-      .mockResolvedValueOnce({ rows: [] }) // time off
-      .mockResolvedValueOnce({ rows: [] }) // overlap
-      .mockResolvedValueOnce({
-        rows: [{ id: 501, service_id: 3, status: "booked" }],
-      }) // insert appointment
-      .mockResolvedValueOnce(); // COMMIT
+          }],
+        };
+      }
+      if (text.includes("FROM breeds") && text.includes("LOWER(name)")) {
+        return { rows: [{ id: 2, name: "Poodle" }] };
+      }
+      if (text.includes("FROM pets") && text.includes("WHERE owner = $1")) {
+        return { rows: [] };
+      }
+      if (text.includes("INSERT INTO pets")) {
+        return {
+          rows: [{ id: 10, name: "Mochi", breed: 2, owner: 7, weight_class_id: 1 }],
+        };
+      }
+      if (text.includes("FROM stylists")) {
+        return { rows: [{ id: 2 }] };
+      }
+      if (text.includes("FROM services") && text.includes("WHERE id = $1")) {
+        return { rows: [{ id: 3, name: "Full Groom" }] };
+      }
+      if (text.includes("FROM service_configurations sc")) {
+        return {
+          rows: [
+            {
+              id: 20,
+              price: 85,
+              duration_minutes: 60,
+              buffer_minutes: 15,
+              service_name: "Full Groom",
+            },
+          ],
+        };
+      }
+      if (text.includes("FROM stylist_availability")) return { rows: availabilityRows };
+      if (text.includes("FROM stylist_time_offs")) return { rows: [] };
+      if (text.includes("FROM appointments")) return { rows: [] };
+      if (text.includes("INSERT INTO appointments")) {
+        return { rows: [{ id: 501, service_id: 3, status: "booked" }] };
+      }
+      return { rows: [] };
+    });
 
     const result = await bookFromScratch({
       first_name: "Kai",
@@ -724,7 +766,7 @@ describe("bookFromScratch()", () => {
       phone: "1234567890",
       email: "kai@example.com",
       pet_name: "Mochi",
-      breed_id: 2,
+      breed: "Poodle",
       weight_class_id: 1,
       service_id: 3,
       stylist_id: 2,
@@ -748,55 +790,55 @@ describe("bookFromScratch()", () => {
   });
 
   it("updates existing client email when supplied email is non-null and different", async () => {
-    mockQuery
-      .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({
-        rows: [
-          {
+    mockQuery.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") return {};
+      if (text.includes("FROM clients") && text.includes("LOWER(first_name)")) {
+        return {
+          rows: [{
             id: 1,
             first_name: "Kai",
             last_name: "Li",
             email: "old@example.com",
             phone: "1234567890",
-          },
-        ],
-      }) // client lookup - found
-      .mockResolvedValueOnce({
-        rows: [
-          {
+          }],
+        };
+      }
+      if (text.includes("UPDATE clients")) {
+        return {
+          rows: [{
             id: 1,
             first_name: "Kai",
             last_name: "Li",
             email: "new@example.com",
             phone: "1234567890",
-          },
-        ],
-      }) // update client email
-      .mockResolvedValueOnce({ rows: [] }) // owner pets
-      .mockResolvedValueOnce({
-        rows: [{ id: 10, name: "Mochi", breed: 2, owner: 1, weight_class_id: 1 }],
-      }) // create pet
-      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
-      .mockResolvedValueOnce({ rows: [{ id: 3, name: "Full Groom" }] }) // service exists
-      .mockResolvedValueOnce({ rows: [{ id: 2, name: "Poodle" }] }) // breed exists
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            id: 20,
-            price: 85,
-            duration_minutes: 60,
-            buffer_minutes: 15,
-            service_name: "Full Groom",
-          },
-        ],
-      }) // active service configuration
-      .mockResolvedValueOnce({ rows: availabilityRows }) // availability
-      .mockResolvedValueOnce({ rows: [] }) // time off
-      .mockResolvedValueOnce({ rows: [] }) // overlap
-      .mockResolvedValueOnce({
-        rows: [{ id: 502, service_id: 3, status: "booked" }],
-      }) // insert appointment
-      .mockResolvedValueOnce(); // COMMIT
+          }],
+        };
+      }
+      if (text.includes("FROM breeds") && text.includes("LOWER(name)")) {
+        return { rows: [{ id: 2, name: "Poodle" }] };
+      }
+      if (text.includes("FROM pets") && text.includes("WHERE owner = $1")) return { rows: [] };
+      if (text.includes("INSERT INTO pets")) {
+        return { rows: [{ id: 10, name: "Mochi", breed: 2, owner: 1, weight_class_id: 1 }] };
+      }
+      if (text.includes("FROM stylists")) return { rows: [{ id: 2 }] };
+      if (text.includes("FROM services") && text.includes("WHERE id = $1")) {
+        return { rows: [{ id: 3, name: "Full Groom" }] };
+      }
+      if (text.includes("FROM service_configurations sc")) {
+        return {
+          rows: [{ id: 20, price: 85, duration_minutes: 60, buffer_minutes: 15, service_name: "Full Groom" }],
+        };
+      }
+      if (text.includes("FROM stylist_availability")) return { rows: availabilityRows };
+      if (text.includes("FROM stylist_time_offs")) return { rows: [] };
+      if (text.includes("FROM appointments")) return { rows: [] };
+      if (text.includes("INSERT INTO appointments")) {
+        return { rows: [{ id: 502, service_id: 3, status: "booked" }] };
+      }
+      return { rows: [] };
+    });
 
     await bookFromScratch({
       first_name: "Kai",
@@ -804,7 +846,7 @@ describe("bookFromScratch()", () => {
       phone: "1234567890",
       email: "new@example.com",
       pet_name: "Mochi",
-      breed_id: 2,
+      breed: "Poodle",
       weight_class_id: 1,
       service_id: 3,
       stylist_id: 2,
@@ -819,41 +861,70 @@ describe("bookFromScratch()", () => {
     expect(mockRelease).toHaveBeenCalled();
   });
 
-  it("throws when breed is not permitted for booking", async () => {
-    mockQuery
-      .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({
-        rows: [{
-          id: 1,
-          first_name: "Kai",
-          last_name: "Li",
-          email: "kai@example.com",
-          phone: "1234567890",
-        }],
-      }) // client lookup
-      .mockResolvedValueOnce({
-        rows: [{ id: 10, name: "Mochi", breed: 2, owner: 1, weight_class_id: 1 }],
-      }) // owner pets
-      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
-      .mockResolvedValueOnce({ rows: [{ id: 3, name: "Full Groom" }] }) // service exists
-      .mockResolvedValueOnce({ rows: [{ id: 2, name: "Poodle", permitted: false }] }) // breed exists but not permitted
-      .mockResolvedValueOnce(); // ROLLBACK
+  it("creates a new pet with null breed when breed is missing and no matching pet exists", async () => {
+    mockQuery.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") return {};
+      if (text.includes("FROM clients") && text.includes("LOWER(first_name)")) {
+        return {
+          rows: [{
+            id: 1,
+            first_name: "Kai",
+            last_name: "Li",
+            email: "kai@example.com",
+            phone: "1234567890",
+          }],
+        };
+      }
+      if (text.includes("FROM pets") && text.includes("WHERE owner = $1")) {
+        return { rows: [] };
+      }
+      if (text.includes("INSERT INTO pets")) {
+        return {
+          rows: [{ id: 10, name: "Mochi", breed: null, owner: 1, weight_class_id: 1 }],
+        };
+      }
+      if (text.includes("FROM stylists")) return { rows: [{ id: 2 }] };
+      if (text.includes("FROM services") && text.includes("WHERE id = $1")) {
+        return { rows: [{ id: 3, name: "Full Groom" }] };
+      }
+      if (text.includes("FROM service_configurations sc")) {
+        return {
+          rows: [{ id: 20, price: 85, duration_minutes: 60, buffer_minutes: 15, service_name: "Full Groom" }],
+        };
+      }
+      if (text.includes("FROM stylist_availability")) return { rows: availabilityRows };
+      if (text.includes("FROM stylist_time_offs")) return { rows: [] };
+      if (text.includes("FROM appointments")) return { rows: [] };
+      if (text.includes("INSERT INTO appointments")) {
+        return { rows: [{ id: 503, service_id: 3, status: "booked" }] };
+      }
+      return { rows: [] };
+    });
 
-    await expect(
-      bookFromScratch({
-        first_name: "Kai",
-        last_name: "Li",
-        phone: "1234567890",
-        email: "kai@example.com",
-        pet_name: "Mochi",
-        breed_id: 2,
-        weight_class_id: 1,
-        service_id: 3,
-        stylist_id: 2,
-        start_time: FUTURE_START,
-      }),
-    ).rejects.toThrow("breed is not permitted for booking");
+    const result = await bookFromScratch({
+      first_name: "Kai",
+      last_name: "Li",
+      phone: "1234567890",
+      email: "kai@example.com",
+      pet_name: "Mochi",
+      weight_class_id: 1,
+      service_id: 3,
+      stylist_id: 2,
+      start_time: FUTURE_START,
+    });
 
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO pets (name, breed, owner, weight_class_id)"),
+      ["Mochi", null, 1, 1],
+    );
+    expect(result).toEqual({
+      id: 503,
+      service_id: 3,
+      status: "booked",
+      service_name: "Full Groom",
+      breed_name: null,
+    });
     expect(mockRelease).toHaveBeenCalled();
   });
 });
