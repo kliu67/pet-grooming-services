@@ -15,14 +15,14 @@ export async function getAllConfigurations(req, res) {
 /**
  * GET /service-configurations
  * Query params:
- *   ?breed_id=&service_id=&weight_class_id=
+ *   ?service_id=&weight_class_id=
  * → get single config by composite key
  */
 export async function getConfiguration(req, res) {
   try {
-    const { breed_id, service_id, weight_class_id } = req.query;
+    const { service_id, weight_class_id } = req.query;
 
-    const config = await Config.findOne(breed_id, service_id, weight_class_id);
+    const config = await Config.findOne(service_id, weight_class_id);
 
     if (!config) {
       return res.status(404).json({ error: "configuration not found" });
@@ -89,19 +89,14 @@ export async function createConfiguration(req, res) {
 /**
  * PATCH /service-configurations
  * Query params required:
- *   ?breed_id=&service_id=&weight_class_id=
+ *   ?service_id=&weight_class_id=
  */
 export async function updateConfiguration(req, res) {
   try {
-    const { breed_id, service_id, weight_class_id } = req.query;
+    const { service_id, weight_class_id } = req.query;
     const updates = req.body;
 
-    const updated = await Config.update(
-      breed_id,
-      service_id,
-      weight_class_id,
-      updates
-    );
+    const updated = await Config.update(service_id, weight_class_id, updates);
 
     return res.status(200).json(updated);
   } catch (err) {
@@ -120,13 +115,13 @@ export async function updateConfiguration(req, res) {
 /**
  * DELETE /service-configurations
  * Query params required:
- *   ?breed_id=&service_id=&weight_class_id=
+ *   ?service_id=&weight_class_id=
  */
 export async function deleteConfiguration(req, res) {
   try {
-    const { breed_id, service_id, weight_class_id } = req.query;
+    const { service_id, weight_class_id } = req.query;
 
-    await Config.remove(breed_id, service_id, weight_class_id);
+    await Config.remove(service_id, weight_class_id);
     return res.status(204).send();
   } catch (err) {
     if (err.message === "configuration not found") {

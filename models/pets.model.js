@@ -14,6 +14,21 @@ function normalizeName(name) {
   return trimmed;
 }
 
+function normalizeSpecies(species) {
+  if (species === undefined) return null;
+  if (species === null) return null;
+  if (typeof species !== "string") {
+    throw new Error("pet species must be a string");
+  }
+
+  const trimmed = species.trim();
+  if (trimmed === "") return null;
+  if (trimmed.length > 60) {
+    throw new Error("pet species cannot exceed 60 characters");
+  }
+  return trimmed;
+}
+
 function validateId(id) {
   const numeric = Number(id);
   if (!Number.isInteger(numeric) || numeric <= 0) {
@@ -29,7 +44,7 @@ function validateId(id) {
  */
 export async function findAll() {
   const { rows } = await pool.query(
-    "SELECT id, name, breed, owner, uuid, weight_class_id, created_at, updated_at FROM pets ORDER BY id DESC"
+    "SELECT id, name, species AS pet_species, breed, owner, uuid, weight_class_id, created_at, updated_at FROM pets ORDER BY id DESC"
   );
   return rows;
 }
@@ -39,7 +54,7 @@ export async function findByOwner(ownerId) {
 
   const { rows } = await pool.query(
     `
-    SELECT p.id, p.name, p.uuid, p.created_at, p.updated_at, p.weight_class_id,
+    SELECT p.id, p.name, p.species AS pet_species, p.uuid, p.created_at, p.updated_at, p.weight_class_id,
            s.id AS breed_id, s.name AS breed
     FROM pets p
     JOIN breeds s ON p.breed = s.id
@@ -60,7 +75,7 @@ export async function findById(id) {
 
   const { rows } = await pool.query(
     `
-    SELECT id, name, breed, owner, weight_class_id, uuid, created_at, updated_at
+    SELECT id, name, species AS pet_species, breed, owner, weight_class_id, uuid, created_at, updated_at
     FROM pets
     WHERE id = $1
     `,
@@ -79,8 +94,11 @@ export async function create({
   owner,
   weightClassId,
   weight_class_id,
+  pet_species,
+  species,
 }) {
   const normalizedName = normalizeName(name);
+  const normalizedSpecies = normalizeSpecies(pet_species ?? species);
   const breedId = validateId(breed);
   const ownerId = validateId(owner);
   const resolvedWeightClassId = weightClassId ?? weight_class_id;
@@ -104,11 +122,11 @@ export async function create({
   try {
     const { rows } = await pool.query(
       `
-      INSERT INTO pets (name, breed, owner, weight_class_id)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, name, breed, owner, weight_class_id, uuid, created_at, updated_at
+      INSERT INTO pets (name, species, breed, owner, weight_class_id)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, name, species AS pet_species, breed, owner, weight_class_id, uuid, created_at, updated_at
       `,
-      [normalizedName, breedId, ownerId, validatedWeightClassId]
+      [normalizedName, normalizedSpecies, breedId, ownerId, validatedWeightClassId]
     );
 
     return rows[0];
@@ -165,6 +183,15 @@ export async function update(id, updates) {
     values.push(breedId);
   }
 
+  // ---- species ----
+  if ("pet_species" in updates || "species" in updates) {
+    const normalizedSpecies = normalizeSpecies(
+      "pet_species" in updates ? updates.pet_species : updates.species,
+    );
+    fields.push(`species = $${index++}`);
+    values.push(normalizedSpecies);
+  }
+
   if ("weightClassId" in updates) {
     const weightClassId = validateId(updates.weightClassId);
 
@@ -195,7 +222,7 @@ export async function update(id, updates) {
       SET ${fields.join(", ")},
           updated_at = NOW()
       WHERE id = $${index}
-      RETURNING id, name, breed, owner, uuid, weight_class_id, created_at, updated_at
+      RETURNING id, name, species AS pet_species, breed, owner, uuid, weight_class_id, created_at, updated_at
       `,
       values
     );

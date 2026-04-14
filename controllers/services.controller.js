@@ -38,8 +38,13 @@ export async function getServiceById(req, res) {
  */
 export async function createService(req, res) {
   try {
-    const { name, base_price, description } = req.body;
-    const newService = await Service.create({ name, base_price, description });
+    const { name, base_price, description, service_species, species } = req.body;
+    const createPayload = { name, base_price, description };
+    const normalizedSpecies = service_species ?? species;
+    if (normalizedSpecies !== undefined) {
+      createPayload.service_species = normalizedSpecies;
+    }
+    const newService = await Service.create(createPayload);
 
     return res.status(201).json(newService);
   } catch (err) {
@@ -57,9 +62,14 @@ export async function updateService(req, res) {
   console.log("Incoming body:", req.body);
   try {
     const { id } = req.params;
-    const { name, base_price, description } = req.body;
+    const { name, base_price, description, service_species, species } = req.body;
+    const updatePayload = { name, base_price, description };
+    const normalizedSpecies = service_species ?? species;
+    if (normalizedSpecies !== undefined) {
+      updatePayload.service_species = normalizedSpecies;
+    }
 
-    const updated = await Service.update(id, { name, base_price, description });
+    const updated = await Service.update(id, updatePayload);
     return res.status(200).json(updated);
   } catch (err) {
     if (err.message.includes("not found")) {

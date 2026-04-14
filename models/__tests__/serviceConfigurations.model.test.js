@@ -31,7 +31,7 @@ describe('findOne', () => {
     const mockRow = { price: 10 };
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
-    const result = await findOne(1, 2, 3);
+    const result = await findOne(2, 3);
 
     expect(result).toEqual(mockRow);
   });
@@ -39,13 +39,13 @@ describe('findOne', () => {
   it('returns null when not found', async () => {
     pool.query.mockResolvedValue({ rows: [] });
 
-    const result = await findOne(1, 2, 3);
+    const result = await findOne(2, 3);
 
     expect(result).toBeNull();
   });
 
   it('throws on invalid id', async () => {
-    await expect(findOne(0, 1, 1)).rejects.toThrow('invalid breed_id');
+    await expect(findOne(0, 1)).rejects.toThrow('invalid service_id');
   });
 });
 
@@ -58,7 +58,6 @@ describe('create', () => {
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
     const result = await create({
-      breed_id: 1,
       service_id: 2,
       weight_class_id: 3,
       price: 15,
@@ -73,7 +72,6 @@ describe('create', () => {
     pool.query.mockRejectedValue({ code: '23505' });
 
     await expect(create({
-      breed_id: 1,
       service_id: 2,
       weight_class_id: 3,
       price: 10,
@@ -85,17 +83,15 @@ describe('create', () => {
     pool.query.mockRejectedValue({ code: '23503' });
 
     await expect(create({
-      breed_id: 999,
       service_id: 2,
       weight_class_id: 3,
       price: 10,
       duration_minutes: 30,
-    })).rejects.toThrow('invalid breed, service, or weight class');
+    })).rejects.toThrow('invalid service or weight class');
   });
 
   it('throws on invalid price', async () => {
     await expect(create({
-      breed_id: 1,
       service_id: 2,
       weight_class_id: 3,
       price: -1,
@@ -105,7 +101,6 @@ describe('create', () => {
 
   it('throws on invalid duration', async () => {
     await expect(create({
-      breed_id: 1,
       service_id: 2,
       weight_class_id: 3,
       price: 10,
@@ -122,7 +117,7 @@ describe('update', () => {
     const mockRow = { price: 20 };
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
-    const result = await update(1, 2, 3, { price: 20 });
+    const result = await update(2, 3, { price: 20 });
 
     expect(result).toEqual(mockRow);
   });
@@ -130,19 +125,19 @@ describe('update', () => {
   it('throws if configuration not found', async () => {
     pool.query.mockResolvedValue({ rows: [] });
 
-    await expect(update(1, 2, 3, { price: 20 }))
+    await expect(update(2, 3, { price: 20 }))
       .rejects
       .toThrow('configuration not found');
   });
 
   it('throws on empty update', async () => {
-    await expect(update(1, 2, 3, {}))
+    await expect(update(2, 3, {}))
       .rejects
       .toThrow('no fields provided for update');
   });
 
   it('throws on invalid duration', async () => {
-    await expect(update(1, 2, 3, { duration_minutes: 0 }))
+    await expect(update(2, 3, { duration_minutes: 0 }))
       .rejects
       .toThrow('invalid duration');
   });
@@ -155,7 +150,7 @@ describe('remove', () => {
   it('returns true when deleted', async () => {
     pool.query.mockResolvedValue({ rowCount: 1 });
 
-    const result = await remove(1, 2, 3);
+    const result = await remove(2, 3);
 
     expect(result).toBe(true);
   });
@@ -163,7 +158,7 @@ describe('remove', () => {
   it('throws if configuration not found', async () => {
     pool.query.mockResolvedValue({ rowCount: 0 });
 
-    await expect(remove(1, 2, 3))
+    await expect(remove(2, 3))
       .rejects
       .toThrow('configuration not found');
   });
@@ -177,7 +172,7 @@ describe('getActiveConfig', () => {
     const mockRow = { is_active: true };
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
-    const result = await getActiveConfig(1, 2, 3);
+    const result = await getActiveConfig(2, 3);
 
     expect(result).toEqual(mockRow);
   });
@@ -186,7 +181,7 @@ describe('getActiveConfig', () => {
     const mockRow = { is_active: false };
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
-    const result = await getActiveConfig(1, 2, 3);
+    const result = await getActiveConfig(2, 3);
 
     expect(result).toBeNull();
   });
@@ -220,7 +215,6 @@ describe('findByServiceGroupedByWeightClass', () => {
     const mockRows = [
       {
         id: 1,
-        breed_id: 1,
         service_id: 2,
         weight_class_id: 1,
         price: 10,
@@ -232,7 +226,6 @@ describe('findByServiceGroupedByWeightClass', () => {
       },
       {
         id: 3,
-        breed_id: 3,
         service_id: 2,
         weight_class_id: 2,
         price: 20,
@@ -271,7 +264,7 @@ describe('concurrency', () => {
     });
 
     const requests = Array.from({ length: 100 }, () =>
-      findOne(1, 2, 3)
+      findOne(2, 3)
     );
 
     const results = await Promise.all(requests);
@@ -287,7 +280,7 @@ describe('concurrency', () => {
     });
 
     const updates = Array.from({ length: 50 }, (_, i) =>
-      update(1, 2, 3, { price: 10 + i })
+      update(2, 3, { price: 10 + i })
     );
 
     const results = await Promise.all(updates);
@@ -309,14 +302,12 @@ describe('concurrency', () => {
 
     const tasks = [
       create({
-        breed_id: 1,
         service_id: 2,
         weight_class_id: 3,
         price: 10,
         duration_minutes: 30,
       }),
       create({
-        breed_id: 1,
         service_id: 2,
         weight_class_id: 3,
         price: 10,
@@ -346,7 +337,7 @@ describe('performance', () => {
     const start = performance.now();
 
     const tasks = Array.from({ length: 1000 }, () =>
-      getActiveConfig(1, 2, 3)
+      getActiveConfig(2, 3)
     );
 
     await Promise.all(tasks);

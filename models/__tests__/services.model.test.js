@@ -31,14 +31,14 @@ beforeEach(() => {
 
 describe('findAll', () => {
   it('returns all rows', async () => {
-    const mockRows = [{ id: 1, code: 'WASH' }, { id: 2, code: 'NAIL_TRIM' }];
+    const mockRows = [{ id: 1, code: 'WASH', service_species: 'dog' }, { id: 2, code: 'NAIL_TRIM', service_species: 'cat' }];
     pool.query.mockResolvedValue({ rows: mockRows });
 
     const result = await findAll();
 
     expect(result).toEqual(mockRows);
     expect(pool.query).toHaveBeenCalledWith(
-      expect.stringContaining('SELECT id, name, base_price, code, description, uuid, created_at FROM services')
+      expect.stringContaining('SELECT id, name, species AS service_species, base_price, code, description, uuid, created_at FROM services')
     );
   });
 });
@@ -99,17 +99,28 @@ describe('create', () => {
   });
 
   it('returns inserted row', async () => {
-    const mockRow = { id: 1, name: 'Wash', code: 'WASH', base_price: 10, description: 'some description' };
+    const mockRow = { id: 1, name: 'Wash', service_species: 'dog', code: 'WASH', base_price: 10, description: 'some description' };
 
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
-    const result = await create({ name: 'Wash', base_price: 10, description: 'some description' });
+    const result = await create({ name: 'Wash', service_species: 'dog', base_price: 10, description: 'some description' });
 
     expect(result).toEqual(mockRow);
     expect(pool.query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO services'),
-      ['Wash', 'WASH', 10, 'some description']
+      ['Wash', 'dog', 'WASH', 10, 'some description']
     );
+  });
+
+  it('throws if service species exceeds 60 characters', async () => {
+    await expect(
+      create({
+        name: 'Wash',
+        service_species: 'a'.repeat(61),
+        base_price: 10,
+        description: 'some description',
+      }),
+    ).rejects.toThrow('service species cannot exceed 60 characters');
   });
 
   it('handles unique violation error', async () => {
@@ -149,11 +160,16 @@ describe('update', () => {
   });
 
   it('returns updated row', async () => {
-    const mockRow = { id: 1, name: 'Wash', base_price: 10, description: 'some description' };
+    const mockRow = { id: 1, name: 'Wash', service_species: 'dog', base_price: 10, description: 'some description' };
 
     pool.query.mockResolvedValue({ rows: [mockRow] });
 
-    const result = await update(1, { name: 'Wash', base_price: 10, description: 'some description' });
+    const result = await update(1, {
+      name: 'Wash',
+      service_species: 'dog',
+      base_price: 10,
+      description: 'some description',
+    });
 
     expect(result).toEqual(mockRow);
   });

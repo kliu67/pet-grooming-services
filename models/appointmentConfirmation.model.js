@@ -27,6 +27,7 @@ export async function findByAppointmentId(appointmentId) {
 
       p.id AS pet_id,
       p.name AS pet_name,
+      p.species AS pet_species,
       p.uuid AS pet_uuid,
 
       b.id AS breed_id,

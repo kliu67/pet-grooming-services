@@ -95,7 +95,9 @@ describe("create", () => {
 
   it("creates and returns row", async () => {
     const mockRow = { id: 1, name: "Buddy" };
-    pool.query.mockResolvedValue({ rows: [mockRow] });
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // weight class lookup
+      .mockResolvedValueOnce({ rows: [mockRow] }); // insert
 
     const result = await create({
       name: "Buddy",
@@ -106,6 +108,38 @@ describe("create", () => {
 
     expect(result).toEqual(mockRow);
     expect(pool.query).toHaveBeenCalled();
+  });
+
+  it("creates pet with optional pet_species", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // weight class lookup
+      .mockResolvedValueOnce({ rows: [{ id: 2, pet_species: "dog" }] }); // insert
+
+    await create({
+      name: "Buddy",
+      breed: 1,
+      owner: 1,
+      weightClassId: 1,
+      pet_species: "dog",
+    });
+
+    expect(pool.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("INSERT INTO pets (name, species, breed, owner, weight_class_id)"),
+      ["Buddy", "dog", 1, 1, 1],
+    );
+  });
+
+  it("throws if pet species exceeds 60 characters", async () => {
+    await expect(
+      create({
+        name: "Buddy",
+        breed: 1,
+        owner: 1,
+        weightClassId: 1,
+        pet_species: "a".repeat(61),
+      }),
+    ).rejects.toThrow("pet species cannot exceed 60 characters");
   });
 
   it("handles FK violation", async () => {
@@ -158,6 +192,18 @@ describe("update", () => {
     const result = await update(1, { name: "Buddy" });
 
     expect(result).toEqual(mockRow);
+  });
+
+  it("updates pet_species when provided", async () => {
+    pool.query.mockResolvedValue({ rows: [{ id: 1, pet_species: "cat" }] });
+
+    const result = await update(1, { pet_species: "cat" });
+
+    expect(result).toEqual({ id: 1, pet_species: "cat" });
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("species = $1"),
+      ["cat", 1],
+    );
   });
 
   it("throws if pet not found", async () => {

@@ -52,7 +52,15 @@ export async function getPetById(req, res) {
  */
 export async function createPet(req, res) {
   try {
-    const { name, breed, owner, weightClassId, weight_class_id } = req.body;
+    const {
+      name,
+      breed,
+      owner,
+      weightClassId,
+      weight_class_id,
+      pet_species,
+      species,
+    } = req.body;
     const resolvedWeightClassId = weightClassId ?? weight_class_id;
     if (resolvedWeightClassId === undefined || resolvedWeightClassId === null) {
       return res
@@ -60,12 +68,18 @@ export async function createPet(req, res) {
         .json({ error: "weightClassId (or weight_class_id) is required" });
     }
 
-    const pet = await Pet.create({
+    const normalizedSpecies = pet_species ?? species;
+    const createPayload = {
       name,
       breed,
       owner,
       weightClassId: resolvedWeightClassId,
-    });
+    };
+    if (normalizedSpecies !== undefined) {
+      createPayload.pet_species = normalizedSpecies;
+    }
+
+    const pet = await Pet.create(createPayload);
     return res.status(201).json(pet);
   } catch (err) {
     if (
