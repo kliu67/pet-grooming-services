@@ -1,0 +1,17 @@
+{
+    "timeOff":[
+        {
+            "stylist_id":1,
+            "start_datetime": "2026-03-10 00:00:00-05",
+            "end_datetime": "2026-03-12 23:59:59-05",
+            "reason": "Sick leave"
+        },
+
+        {
+            "stylist_id": 1,
+            "start_datetime" : "2026-03-21 00:00:00-05",
+            "end_datetime": "2026-03-21 23:59:59-05",
+            "reason": "Personal day"
+        }
+    ]
+}
