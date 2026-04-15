@@ -91,6 +91,14 @@ app.use(
   }),
 );
 
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "Pet Grooming Services API",
+    health: "/api/health",
+  });
+});
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
