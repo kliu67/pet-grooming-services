@@ -28,26 +28,46 @@ export const app = express();
 const PORT = process.env.PORT || 3000;
 const FE_PORT = process.env.FEPORT || 5173;
 const isProd = process.env.NODE_ENV === "production";
-const FE_ORIGIN =
-  process.env.FE_ORIGIN || `http://localhost:${FE_PORT}`;
+const parseOrigins = (value = "") =>
+  value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
-if (isProd && !process.env.FE_ORIGIN) {
-  throw new Error("FRONTEND_ORIGIN is required in production");
+const envOrigins = [
+  ...parseOrigins(process.env.FE_ORIGIN),
+  ...parseOrigins(process.env.FE_ORIGINS),
+];
+
+const allowedOrigins =
+  envOrigins.length > 0
+    ? [...new Set(envOrigins)]
+    : [`http://localhost:${FE_PORT}`];
+
+if (isProd && envOrigins.length === 0) {
+  throw new Error("FE_ORIGIN or FE_ORIGINS is required in production");
 }
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    callback(null, allowedOrigins.includes(origin));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
 const PgSession = connectPgSimple(session);
 app.set("trust proxy", 1);
 
-app.use(
-  cors({
-    origin: FE_ORIGIN,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
+app.use(cors(corsOptions));
 
-app.options(/.*/, cors({ origin: FE_ORIGIN, credentials: true }));
+app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
