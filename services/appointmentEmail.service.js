@@ -1,5 +1,25 @@
 import nodemailer from "nodemailer";
 
+function maskEmail(email) {
+  if (!email) return null;
+  const normalized = String(email).trim();
+  const atIndex = normalized.indexOf("@");
+  if (atIndex <= 0) return "***";
+
+  const local = normalized.slice(0, atIndex);
+  const domain = normalized.slice(atIndex + 1);
+  const maskedLocal =
+    local.length <= 2 ? `${local[0] || "*"}*` : `${local.slice(0, 2)}***`;
+  return `${maskedLocal}@${domain}`;
+}
+
+function maskFromAddress(from) {
+  if (!from) return null;
+  const match = String(from).match(/<([^>]+)>/);
+  if (!match) return "***";
+  return maskEmail(match[1]);
+}
+
 function formatWhen(value) {
   if (!value) return "TBD";
 
@@ -69,6 +89,28 @@ function getEmailConfig() {
     gmailAppPassword: process.env.GMAIL_APP_PASSWORD,
     bookingNotificationEmail: process.env.BOOKING_NOTIFICATION_EMAIL,
     bookingNotificationDomain: process.env.BOOKING_NOTIFICATION_DOMAIN,
+  };
+}
+
+export function getEmailConfigStatus() {
+  const {
+    from,
+    gmailUser,
+    gmailAppPassword,
+    bookingNotificationEmail,
+    bookingNotificationDomain,
+  } = getEmailConfig();
+
+  return {
+    fromConfigured: Boolean(from),
+    fromMasked: maskFromAddress(from),
+    gmailUserConfigured: Boolean(gmailUser),
+    gmailUserMasked: maskEmail(gmailUser),
+    gmailAppPasswordConfigured: Boolean(gmailAppPassword),
+    bookingNotificationEmailConfigured: Boolean(bookingNotificationEmail),
+    bookingNotificationEmailMasked: maskEmail(bookingNotificationEmail),
+    bookingNotificationDomainConfigured: Boolean(bookingNotificationDomain),
+    bookingNotificationDomain: bookingNotificationDomain || null,
   };
 }
 

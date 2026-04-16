@@ -19,7 +19,10 @@ import userRoutes from "./routes/users.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import appointmentConfirmationRoutes from "./routes/appointmentConfirmation.routes.js";
 import { errorHandler } from "./middleware/error.middleware.js";
-import { verifyEmailTransport } from "./services/appointmentEmail.service.js";
+import {
+  getEmailConfigStatus,
+  verifyEmailTransport,
+} from "./services/appointmentEmail.service.js";
 
 dotenv.config();
 
@@ -142,6 +145,7 @@ app.use("/auth", authRoutes);
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== "test") {
+  console.log("[email] Config status:", getEmailConfigStatus());
   initDb().then(() => {
     app.listen(PORT, () =>
       console.log(`Backend running at http://localhost:${PORT}`),
