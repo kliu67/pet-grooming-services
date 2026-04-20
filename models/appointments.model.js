@@ -112,23 +112,6 @@ async function assertServiceExists(dbClient, serviceId) {
   return serviceRes.rows[0];
 }
 
-async function getBreedById(dbClient, breedId) {
-  const breedRes = await dbClient.query(
-    `
-      SELECT id, name
-      FROM breeds
-      WHERE id = $1
-    `,
-    [breedId],
-  );
-
-  if (!breedRes.rows[0]) {
-    throw new Error("breed not found");
-  }
-
-  return breedRes.rows[0];
-}
-
 async function getBreedByName(dbClient, breedName) {
   const breedRes = await dbClient.query(
     `
@@ -593,7 +576,8 @@ export async function book({
   service_id: serviceId,
   service_configuration_id: serviceConfigurationId,
   stylist_id: stylistId,
-  start_time: startTime,
+  start_time: startTimeSnake,
+  startTime,
   description = null,
   status = null,
 }) {
@@ -605,7 +589,7 @@ export async function book({
     "service_configuration_id",
   );
   stylistId = validateId(stylistId, "stylist_id");
-  const start = validateTime(startTime);
+  const start = validateTime(startTime ?? startTimeSnake);
   assertDateTimeNotInThePast(start);
 
   const dbClient = await pool.connect();
@@ -794,16 +778,7 @@ export async function bookFromScratch({
       }
     }
 
-    // let resolvedBreedId = null;
-    // let resolvedBreedName = null;
-    // if (normalizedBreed) {
-    //   const breedRow = await getBreedByName(dbClient, normalizedBreed);
-    //   if (!breedRow) {
-    //     throw new Error("invalid breed");
-    //   }
-    //   resolvedBreedId = breedRow.id;
-    //   resolvedBreedName = breedRow.name;
-    // }
+
 
     const pets = await getPetsByOwner(dbClient, client.id);
 
@@ -826,11 +801,6 @@ export async function bookFromScratch({
       );
       pet = createdPetRes.rows[0];
     }
-
-    // if (!resolvedBreedName) {
-    //   const breedRow = await getBreedById(dbClient, pet.breed);
-    //   resolvedBreedName = breedRow.name;
-    // }
 
     await assertStylistExists(dbClient, stylistId);
     const service = await assertServiceExists(dbClient, serviceId);
