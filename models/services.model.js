@@ -3,9 +3,24 @@ import { isValidId } from "../utils/helpers.js";
 import { validateNumericId } from "../validators/validator.js";
 import { isIdValidNumeric } from  "../validators/validator.js";
 
+function normalizeSpecies(species) {
+    if (species === undefined) return null;
+    if (species === null) return null;
+    if (typeof species !== "string") {
+        throw new Error("data validation error: service species must be a string");
+    }
+
+    const trimmed = species.trim();
+    if (trimmed === "") return null;
+    if (trimmed.length > 60) {
+        throw new Error("data validation error: service species cannot exceed 60 characters");
+    }
+    return trimmed;
+}
+
 export async function findAll(){
     const { rows } = await pool.query(
-        `SELECT id, name, base_price, code, description, uuid, created_at FROM services`
+        `SELECT id, name, species AS service_species, base_price, code, description, uuid, created_at FROM services`
     )
     return rows ?? null;
 }
@@ -17,7 +32,7 @@ export async function findById(id) {
 
     const sanitizedId = validateNumericId(id);
     const {rows} = await pool.query(
-        `SELECT id, name, base_price, description, uuid, created_at FROM services
+        `SELECT id, name, species AS service_species, base_price, description, uuid, created_at FROM services
         WHERE id = $1`,
         [sanitizedId]
     );
@@ -31,7 +46,7 @@ export async function findById(id) {
  * @param {create service} param0 
  * @returns 
  */
-export async function create({name, base_price, description}){
+export async function create({name, base_price, description, service_species, species}){
     //name cannot be empty, null or undefined
     if(!name){
         throw new Error('data validation error: name cannot be empty, null, or undefined')
@@ -50,14 +65,15 @@ export async function create({name, base_price, description}){
         throw new Error('data validation error: base_price cannot be negative');
     }
 
+    const normalizedSpecies = normalizeSpecies(service_species ?? species);
     const serviceCode = name.trim().toUpperCase().replace(/\s+/g, "_");
 
     try{
         const { rows } = await pool.query(
-            `INSERT INTO services(name, code, base_price, description)
-            VALUES ($1, $2, $3, $4)
-            RETURNING id, name, code, base_price, uuid, created_at`,
-            [name, serviceCode, base_price, description]
+            `INSERT INTO services(name, species, code, base_price, description)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id, name, species AS service_species, code, base_price, uuid, created_at`,
+            [name, normalizedSpecies, serviceCode, base_price, description]
         )
         return rows[0] ?? null;
     }
@@ -73,7 +89,7 @@ export async function create({name, base_price, description}){
     }
 }
 
-export async function update(id, {name='', description='', base_price=''}){
+export async function update(id, {name='', description='', base_price='', service_species, species}){
   if (!isIdValidNumeric(id)) {
     throw new Error(`data validation error: id ${id} is invalid`);
   }
@@ -93,13 +109,14 @@ export async function update(id, {name='', description='', base_price=''}){
         throw new Error('data validation error: base_price cannot be negative');
     }
 
+    const normalizedSpecies = normalizeSpecies(service_species ?? species);
     const {rows} = await pool.query(
         `
         UPDATE services
-        SET name = $1, base_price = $2, description = $3
-        WHERE id = $4
-        RETURNING *`,
-        [name, base_price, description, id]
+        SET name = $1, species = $2, base_price = $3, description = $4
+        WHERE id = $5
+        RETURNING id, name, species AS service_species, code, base_price, description, uuid, created_at`,
+        [name, normalizedSpecies, base_price, description, id]
     )
     
     if(!rows[0]){

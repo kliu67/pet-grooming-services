@@ -22,8 +22,8 @@ describe("Service Routes", () => {
   describe("GET /services", () => {
     it("returns all services", async () => {
       const mockServices = [
-        { id: 1, name: "Bath", base_price: 20 },
-        { id: 2, name: "Haircut", base_price: 40 },
+        { id: 1, name: "Bath", service_species: "dog", base_price: 20 },
+        { id: 2, name: "Haircut", service_species: "cat", base_price: 40 },
       ];
 
       Service.findAll.mockResolvedValue(mockServices);
@@ -41,7 +41,7 @@ describe("Service Routes", () => {
   =============================== */
   describe("GET /services/:id", () => {
     it("returns service by id", async () => {
-      const mockService = { id: 1, name: "Bath", base_price: 20 };
+      const mockService = { id: 1, name: "Bath", service_species: "dog", base_price: 20 };
       Service.findById.mockResolvedValue(mockService);
 
       const res = await request(app).get("/services/1");
@@ -66,18 +66,20 @@ describe("Service Routes", () => {
   =============================== */
   describe("POST /services", () => {
     it("creates a service", async () => {
-      const newService = { id: 1, name: "Bath", base_price: 20 };
+      const newService = { id: 1, name: "Bath", service_species: "dog", base_price: 20 };
       Service.create.mockResolvedValue(newService);
 
       const res = await request(app)
         .post("/services")
-        .send({ name: "Bath", base_price: 20 });
+        .send({ name: "Bath", service_species: "dog", base_price: 20 });
 
       expect(res.status).toBe(201);
       expect(res.body).toEqual(newService);
       expect(Service.create).toHaveBeenCalledWith({
         name: "Bath",
+        service_species: "dog",
         base_price: 20,
+        description: undefined,
       });
     });
 
@@ -100,19 +102,21 @@ describe("Service Routes", () => {
   =============================== */
   describe("PUT /services/:id", () => {
     it("updates a service", async () => {
-      const updatedService = { id: 1, name: "Bath+", base_price: 25 };
+      const updatedService = { id: 1, name: "Bath+", service_species: "dog", base_price: 25 };
 
       Service.update.mockResolvedValue(updatedService);
 
       const res = await request(app)
         .put("/services/1")
-        .send({ name: "Bath+", base_price: 25 });
+        .send({ name: "Bath+", service_species: "dog", base_price: 25 });
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(updatedService);
       expect(Service.update).toHaveBeenCalledWith("1", {
         name: "Bath+",
+        service_species: "dog",
         base_price: 25,
+        description: undefined,
       });
     });
 

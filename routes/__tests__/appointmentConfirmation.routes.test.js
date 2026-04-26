@@ -21,6 +21,7 @@ describe("Appointment Confirmation Routes", () => {
         appointment_id: 1,
         appointment_number: "APT-00000001",
         status: "booked",
+        pet_species: "dog",
       };
       AppointmentConfirmation.findByAppointmentId.mockResolvedValue(
         mockConfirmation,

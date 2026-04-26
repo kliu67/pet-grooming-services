@@ -109,7 +109,21 @@ async function assertServiceExists(dbClient, serviceId) {
   if (!serviceRes.rows[0]) {
     throw new Error("service not found");
   }
-  return;
+  return serviceRes.rows[0];
+}
+
+async function getBreedByName(dbClient, breedName) {
+  const breedRes = await dbClient.query(
+    `
+      SELECT id, name
+      FROM breeds
+      WHERE LOWER(name) = LOWER($1)
+      LIMIT 1
+    `,
+    [breedName],
+  );
+
+  return breedRes.rows[0] ?? null;
 }
 
 function assertStylistIsAvailable(availabilityData, stylistId, start, end) {
@@ -342,7 +356,6 @@ async function getActiveServiceConfiguration(dbClient, serviceConfigurationId) {
 async function getActiveServiceConfigurationByFKs(
   dbClient,
   service_id,
-  breed_id,
   weight_class_id,
 ) {
   const cfgRes = await dbClient.query(
@@ -350,26 +363,23 @@ async function getActiveServiceConfigurationByFKs(
      SELECT sc.id, sc.price, sc.duration_minutes, sc.buffer_minutes, s.name AS service_name
     FROM service_configurations sc
     JOIN services s ON s.id = sc.service_id
-    WHERE sc.service_id = $1 AND sc.breed_id = $2 AND sc.weight_class_id = $3
+    WHERE sc.service_id = $1 AND sc.weight_class_id = $2
       AND sc.is_active = TRUE
     `,
-    [service_id, breed_id, weight_class_id],
+    [service_id, weight_class_id],
   );
   if (!cfgRes.rows[0]) {
-    throw new Error(
-      "service configuration not found with petId breedId and serviceId",
-    );
+    throw new Error("service configuration not found");
   }
   return cfgRes.rows[0];
 }
 
 async function getConfigByServiceAndPet(dbClient, service_id, pet_id) {
   const pet = await getPet(dbClient, pet_id);
-  const { breed: breed_id, weight_class_id } = pet;
+  const { weight_class_id } = pet;
   return await getActiveServiceConfigurationByFKs(
     dbClient,
     service_id,
-    breed_id,
     weight_class_id,
   );
 }
@@ -566,7 +576,8 @@ export async function book({
   service_id: serviceId,
   service_configuration_id: serviceConfigurationId,
   stylist_id: stylistId,
-  start_time: startTime,
+  start_time: startTimeSnake,
+  startTime,
   description = null,
   status = null,
 }) {
@@ -578,7 +589,7 @@ export async function book({
     "service_configuration_id",
   );
   stylistId = validateId(stylistId, "stylist_id");
-  const start = validateTime(startTime);
+  const start = validateTime(startTime ?? startTimeSnake);
   assertDateTimeNotInThePast(start);
 
   const dbClient = await pool.connect();
@@ -674,7 +685,7 @@ export async function bookFromScratch({
   phone,
   email,
   pet_name,
-  breed_id,
+  breed = null,
   weight_class_id,
   service_id,
   stylist_id,
@@ -705,7 +716,17 @@ export async function bookFromScratch({
     throw new Error("invalid pet_name");
   }
 
-  const breedId = validateId(breed_id, "breed_id");
+  let normalizedBreed = null;
+  if (breed !== null && breed !== undefined) {
+    if (typeof breed !== "string") {
+      throw new Error("invalid breed");
+    }
+    normalizedBreed = breed.trim();
+    if (!normalizedBreed) {
+      normalizedBreed = null;
+    }
+  }
+
   const weightClassId = validateId(weight_class_id, "weight_class_id");
   const serviceId = validateId(service_id, "service_id");
   const stylistId = validateId(stylist_id, "stylist_id");
@@ -730,44 +751,63 @@ export async function bookFromScratch({
     if (!client) {
       const createdClientRes = await dbClient.query(
         `
-        INSERT INTO clients (first_name, last_name, phone)
-        VALUES ($1, $2, $3)
-        RETURNING id, first_name, last_name, phone
+        INSERT INTO clients (first_name, last_name, email, phone)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, first_name, last_name, email, phone
         `,
-        [first_name.trim(), last_name.trim(), phone.trim()],
+        [first_name.trim(), last_name.trim(), email, phone.trim()],
       );
       client = createdClientRes.rows[0];
+    } else if (email && client.email !== email) {
+      try {
+        const updatedClientRes = await dbClient.query(
+          `
+          UPDATE clients
+          SET email = $1
+          WHERE id = $2
+          RETURNING id, first_name, last_name, email, phone
+          `,
+          [email, client.id],
+        );
+        client = updatedClientRes.rows[0] ?? client;
+      } catch (err) {
+        if (err.code === "23505") {
+          throw new Error("email already exists");
+        }
+        throw err;
+      }
     }
+
+
 
     const pets = await getPetsByOwner(dbClient, client.id);
 
     const normalizedPetName = pet_name.trim().toLowerCase();
-    let pet = pets.find(
-      (p) =>
-        p.name?.trim().toLowerCase() === normalizedPetName &&
-        Number(p.breed) === breedId &&
-        Number(p.weight_class_id) === weightClassId,
-    );
+    let pet =  pets.find(
+        (p) =>
+          p.name?.trim().toLowerCase() === normalizedPetName &&
+          Number(p.weight_class_id) === weightClassId,
+      );
 
     if (!pet) {
+
       const createdPetRes = await dbClient.query(
         `
         INSERT INTO pets (name, breed, owner, weight_class_id)
         VALUES ($1, $2, $3, $4)
         RETURNING id, name, breed, owner, weight_class_id
         `,
-        [pet_name.trim(), breedId, client.id, weightClassId],
+        [pet_name.trim(), normalizedBreed, client.id, weightClassId],
       );
       pet = createdPetRes.rows[0];
     }
 
     await assertStylistExists(dbClient, stylistId);
-    await assertServiceExists(dbClient, serviceId);
+    const service = await assertServiceExists(dbClient, serviceId);
 
     const config = await getActiveServiceConfigurationByFKs(
       dbClient,
       serviceId,
-      breedId,
       weightClassId,
     );
 
@@ -814,7 +854,11 @@ export async function bookFromScratch({
     );
 
     await dbClient.query("COMMIT");
-    return insertRes.rows[0];
+    return {
+      ...insertRes.rows[0],
+      service_name: service.name,
+      breed_name: normalizedBreed,
+    };
   } catch (err) {
     await dbClient.query("ROLLBACK");
     throw mapBookingDbError(err);

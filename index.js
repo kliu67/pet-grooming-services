@@ -19,6 +19,10 @@ import userRoutes from "./routes/users.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import appointmentConfirmationRoutes from "./routes/appointmentConfirmation.routes.js";
 import { errorHandler } from "./middleware/error.middleware.js";
+import {
+  getEmailConfigStatus,
+  verifyEmailTransport,
+} from "./services/appointmentEmail.service.js";
 
 dotenv.config();
 
@@ -27,33 +31,45 @@ export const app = express();
 const PORT = process.env.PORT || 3000;
 const FE_PORT = process.env.FEPORT || 5173;
 const isProd = process.env.NODE_ENV === "production";
-const FE_ORIGINS = process.env.FE_ORIGIN
-  ? process.env.FE_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean)
-  : [`http://localhost:${FE_PORT}`];
+const parseOrigins = (value = "") =>
+  value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
-if (isProd && FE_ORIGINS.length === 0) {
-  throw new Error("FRONTEND_ORIGIN is required in production");
+const envOrigins = [
+  ...parseOrigins(process.env.FE_ORIGIN),
+  ...parseOrigins(process.env.FE_ORIGINS),
+];
+
+const allowedOrigins =
+  envOrigins.length > 0
+    ? [...new Set(envOrigins)]
+    : [`http://localhost:${FE_PORT}`];
+
+if (isProd && envOrigins.length === 0) {
+  throw new Error("FE_ORIGIN or FE_ORIGINS is required in production");
 }
-
-const PgSession = connectPgSimple(session);
-app.set("trust proxy", 1);
 
 const corsOptions = {
   origin(origin, callback) {
     if (!origin) {
-      return callback(null, true);
+      callback(null, true);
+      return;
     }
-    if (FE_ORIGINS.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
+
+    callback(null, allowedOrigins.includes(origin));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
+const PgSession = connectPgSimple(session);
+app.set("trust proxy", 1);
+
 app.use(cors(corsOptions));
+
 app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
@@ -78,8 +94,38 @@ app.use(
   }),
 );
 
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "Pet Grooming Services API",
+    health: "/api/health",
+  });
+});
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
+});
+
+app.get("/api/health/email", async (req, res) => {
+  try {
+    const result = await verifyEmailTransport();
+    if (!result.ok) {
+      return res.status(503).json({
+        status: "error",
+        service: "email",
+        reason: result.reason,
+        message: result.message,
+      });
+    }
+
+    return res.status(200).json({ status: "ok", service: "email" });
+  } catch (err) {
+    return res.status(500).json({
+      status: "error",
+      service: "email",
+      message: err.message,
+    });
+  }
 });
 
 app.use("/api/clients", clientRoutes);
@@ -99,6 +145,7 @@ app.use("/auth", authRoutes);
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== "test") {
+  console.log("[email] Config status:", getEmailConfigStatus());
   initDb().then(() => {
     app.listen(PORT, () =>
       console.log(`Backend running at http://localhost:${PORT}`),

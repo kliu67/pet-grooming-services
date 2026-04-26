@@ -15,6 +15,7 @@ vi.mock("../../db.js", () => ({
 import { pool } from "../../db.js";
 import {
   book,
+  bookFromScratch,
   findById,
   cancel,
   remove,
@@ -610,6 +611,320 @@ describe("book()", () => {
         start_time: start,
       }),
     ).rejects.toThrow("start time and end time must be on the same day");
+    expect(mockRelease).toHaveBeenCalled();
+  });
+});
+
+describe("bookFromScratch()", () => {
+  it("returns appointment enriched with service_name and breed_name", async () => {
+    mockQuery.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") {
+        return {};
+      }
+      if (text.includes("FROM clients") && text.includes("LOWER(first_name)")) {
+        return {
+          rows: [{
+            id: 1,
+            first_name: "Kai",
+            last_name: "Li",
+            email: "kai@example.com",
+            phone: "1234567890",
+          }],
+        };
+      }
+      if (text.includes("FROM breeds") && text.includes("LOWER(name)")) {
+        return { rows: [{ id: 2, name: "Poodle" }] };
+      }
+      if (text.includes("FROM pets") && text.includes("WHERE owner = $1")) {
+        return { rows: [] };
+      }
+      if (text.includes("INSERT INTO pets")) {
+        return {
+          rows: [{ id: 10, name: "Mochi", breed: 2, owner: 1, weight_class_id: 1 }],
+        };
+      }
+      if (text.includes("FROM stylists")) {
+        return { rows: [{ id: 2 }] };
+      }
+      if (text.includes("FROM services") && text.includes("WHERE id = $1")) {
+        return { rows: [{ id: 3, name: "Full Groom" }] };
+      }
+      if (text.includes("FROM service_configurations sc")) {
+        return {
+          rows: [
+            {
+              id: 20,
+              price: 85,
+              duration_minutes: 60,
+              buffer_minutes: 15,
+              service_name: "Full Groom",
+            },
+          ],
+        };
+      }
+      if (text.includes("FROM stylist_availability")) {
+        return { rows: availabilityRows };
+      }
+      if (text.includes("FROM stylist_time_offs")) {
+        return { rows: [] };
+      }
+      if (text.includes("FROM appointments")) {
+        return { rows: [] };
+      }
+      if (text.includes("INSERT INTO appointments")) {
+        return { rows: [{ id: 500, service_id: 3, status: "booked" }] };
+      }
+      return { rows: [] };
+    });
+
+    const result = await bookFromScratch({
+      first_name: "Kai",
+      last_name: "Li",
+      phone: "1234567890",
+      email: "kai@example.com",
+      pet_name: "Mochi",
+      breed: "Poodle",
+      weight_class_id: 1,
+      service_id: 3,
+      stylist_id: 2,
+      start_time: FUTURE_START,
+    });
+
+    expect(result).toEqual({
+      id: 500,
+      service_id: 3,
+      status: "booked",
+      service_name: "Full Groom",
+      breed_name: "Poodle",
+    });
+    expect(mockRelease).toHaveBeenCalled();
+  });
+
+  it("creates a new client with optional email when no existing client is found", async () => {
+    mockQuery.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") {
+        return {};
+      }
+      if (text.includes("FROM clients") && text.includes("LOWER(first_name)")) {
+        return { rows: [] };
+      }
+      if (text.includes("INSERT INTO clients")) {
+        return {
+          rows: [{
+            id: 7,
+            first_name: "Kai",
+            last_name: "Li",
+            email: "kai@example.com",
+            phone: "1234567890",
+          }],
+        };
+      }
+      if (text.includes("FROM breeds") && text.includes("LOWER(name)")) {
+        return { rows: [{ id: 2, name: "Poodle" }] };
+      }
+      if (text.includes("FROM pets") && text.includes("WHERE owner = $1")) {
+        return { rows: [] };
+      }
+      if (text.includes("INSERT INTO pets")) {
+        return {
+          rows: [{ id: 10, name: "Mochi", breed: 2, owner: 7, weight_class_id: 1 }],
+        };
+      }
+      if (text.includes("FROM stylists")) {
+        return { rows: [{ id: 2 }] };
+      }
+      if (text.includes("FROM services") && text.includes("WHERE id = $1")) {
+        return { rows: [{ id: 3, name: "Full Groom" }] };
+      }
+      if (text.includes("FROM service_configurations sc")) {
+        return {
+          rows: [
+            {
+              id: 20,
+              price: 85,
+              duration_minutes: 60,
+              buffer_minutes: 15,
+              service_name: "Full Groom",
+            },
+          ],
+        };
+      }
+      if (text.includes("FROM stylist_availability")) return { rows: availabilityRows };
+      if (text.includes("FROM stylist_time_offs")) return { rows: [] };
+      if (text.includes("FROM appointments")) return { rows: [] };
+      if (text.includes("INSERT INTO appointments")) {
+        return { rows: [{ id: 501, service_id: 3, status: "booked" }] };
+      }
+      return { rows: [] };
+    });
+
+    const result = await bookFromScratch({
+      first_name: "Kai",
+      last_name: "Li",
+      phone: "1234567890",
+      email: "kai@example.com",
+      pet_name: "Mochi",
+      breed: "Poodle",
+      weight_class_id: 1,
+      service_id: 3,
+      stylist_id: 2,
+      start_time: FUTURE_START,
+    });
+
+    expect(mockQuery).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining("INSERT INTO clients (first_name, last_name, email, phone)"),
+      ["Kai", "Li", "kai@example.com", "1234567890"],
+    );
+
+    expect(result).toEqual({
+      id: 501,
+      service_id: 3,
+      status: "booked",
+      service_name: "Full Groom",
+      breed_name: "Poodle",
+    });
+    expect(mockRelease).toHaveBeenCalled();
+  });
+
+  it("updates existing client email when supplied email is non-null and different", async () => {
+    mockQuery.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") return {};
+      if (text.includes("FROM clients") && text.includes("LOWER(first_name)")) {
+        return {
+          rows: [{
+            id: 1,
+            first_name: "Kai",
+            last_name: "Li",
+            email: "old@example.com",
+            phone: "1234567890",
+          }],
+        };
+      }
+      if (text.includes("UPDATE clients")) {
+        return {
+          rows: [{
+            id: 1,
+            first_name: "Kai",
+            last_name: "Li",
+            email: "new@example.com",
+            phone: "1234567890",
+          }],
+        };
+      }
+      if (text.includes("FROM breeds") && text.includes("LOWER(name)")) {
+        return { rows: [{ id: 2, name: "Poodle" }] };
+      }
+      if (text.includes("FROM pets") && text.includes("WHERE owner = $1")) return { rows: [] };
+      if (text.includes("INSERT INTO pets")) {
+        return { rows: [{ id: 10, name: "Mochi", breed: 2, owner: 1, weight_class_id: 1 }] };
+      }
+      if (text.includes("FROM stylists")) return { rows: [{ id: 2 }] };
+      if (text.includes("FROM services") && text.includes("WHERE id = $1")) {
+        return { rows: [{ id: 3, name: "Full Groom" }] };
+      }
+      if (text.includes("FROM service_configurations sc")) {
+        return {
+          rows: [{ id: 20, price: 85, duration_minutes: 60, buffer_minutes: 15, service_name: "Full Groom" }],
+        };
+      }
+      if (text.includes("FROM stylist_availability")) return { rows: availabilityRows };
+      if (text.includes("FROM stylist_time_offs")) return { rows: [] };
+      if (text.includes("FROM appointments")) return { rows: [] };
+      if (text.includes("INSERT INTO appointments")) {
+        return { rows: [{ id: 502, service_id: 3, status: "booked" }] };
+      }
+      return { rows: [] };
+    });
+
+    await bookFromScratch({
+      first_name: "Kai",
+      last_name: "Li",
+      phone: "1234567890",
+      email: "new@example.com",
+      pet_name: "Mochi",
+      breed: "Poodle",
+      weight_class_id: 1,
+      service_id: 3,
+      stylist_id: 2,
+      start_time: FUTURE_START,
+    });
+
+    expect(mockQuery).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining("UPDATE clients"),
+      ["new@example.com", 1],
+    );
+    expect(mockRelease).toHaveBeenCalled();
+  });
+
+  it("creates a new pet with null breed when breed is missing and no matching pet exists", async () => {
+    mockQuery.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") return {};
+      if (text.includes("FROM clients") && text.includes("LOWER(first_name)")) {
+        return {
+          rows: [{
+            id: 1,
+            first_name: "Kai",
+            last_name: "Li",
+            email: "kai@example.com",
+            phone: "1234567890",
+          }],
+        };
+      }
+      if (text.includes("FROM pets") && text.includes("WHERE owner = $1")) {
+        return { rows: [] };
+      }
+      if (text.includes("INSERT INTO pets")) {
+        return {
+          rows: [{ id: 10, name: "Mochi", breed: null, owner: 1, weight_class_id: 1 }],
+        };
+      }
+      if (text.includes("FROM stylists")) return { rows: [{ id: 2 }] };
+      if (text.includes("FROM services") && text.includes("WHERE id = $1")) {
+        return { rows: [{ id: 3, name: "Full Groom" }] };
+      }
+      if (text.includes("FROM service_configurations sc")) {
+        return {
+          rows: [{ id: 20, price: 85, duration_minutes: 60, buffer_minutes: 15, service_name: "Full Groom" }],
+        };
+      }
+      if (text.includes("FROM stylist_availability")) return { rows: availabilityRows };
+      if (text.includes("FROM stylist_time_offs")) return { rows: [] };
+      if (text.includes("FROM appointments")) return { rows: [] };
+      if (text.includes("INSERT INTO appointments")) {
+        return { rows: [{ id: 503, service_id: 3, status: "booked" }] };
+      }
+      return { rows: [] };
+    });
+
+    const result = await bookFromScratch({
+      first_name: "Kai",
+      last_name: "Li",
+      phone: "1234567890",
+      email: "kai@example.com",
+      pet_name: "Mochi",
+      weight_class_id: 1,
+      service_id: 3,
+      stylist_id: 2,
+      start_time: FUTURE_START,
+    });
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO pets (name, breed, owner, weight_class_id)"),
+      ["Mochi", null, 1, 1],
+    );
+    expect(result).toEqual({
+      id: 503,
+      service_id: 3,
+      status: "booked",
+      service_name: "Full Groom",
+      breed_name: null,
+    });
     expect(mockRelease).toHaveBeenCalled();
   });
 });

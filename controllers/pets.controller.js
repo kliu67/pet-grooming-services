@@ -1,5 +1,38 @@
 import * as Pet from "../models/pets.model.js";
 
+function normalizePetPayload(body, { requireWeightClass } = { requireWeightClass: false }) {
+  const {
+    name,
+    breed,
+    owner,
+    weightClassId,
+    weight_class_id,
+    pet_species,
+    species,
+  } = body;
+
+  const resolvedWeightClassId = weightClassId ?? weight_class_id;
+  if (requireWeightClass && (resolvedWeightClassId === undefined || resolvedWeightClassId === null)) {
+    throw new Error("weightClassId (or weight_class_id) is required");
+  }
+
+  const payload = {
+    name,
+    owner,
+    weightClassId: resolvedWeightClassId,
+  };
+
+  if ("breed" in body) {
+    payload.breed = breed;
+  }
+
+  if ("pet_species" in body || "species" in body) {
+    payload.pet_species = pet_species ?? species;
+  }
+
+  return payload;
+}
+
 /**
  * GET /pets/owner/:ownerId
  * Get all pets for a client
@@ -52,26 +85,15 @@ export async function getPetById(req, res) {
  */
 export async function createPet(req, res) {
   try {
-    const { name, breed, owner, weightClassId, weight_class_id } = req.body;
-    const resolvedWeightClassId = weightClassId ?? weight_class_id;
-    if (resolvedWeightClassId === undefined || resolvedWeightClassId === null) {
-      return res
-        .status(400)
-        .json({ error: "weightClassId (or weight_class_id) is required" });
-    }
-
-    const pet = await Pet.create({
-      name,
-      breed,
-      owner,
-      weightClassId: resolvedWeightClassId,
-    });
+    const createPayload = normalizePetPayload(req.body, { requireWeightClass: true });
+    const pet = await Pet.create(createPayload);
     return res.status(201).json(pet);
   } catch (err) {
     if (
       err.message.includes("invalid") ||
       err.message.includes("cannot") ||
-      err.message.includes("exceed")
+      err.message.includes("exceed") ||
+      err.message.includes("required")
     ) {
       return res.status(400).json({ error: err.message });
     }
@@ -86,7 +108,7 @@ export async function createPet(req, res) {
 export async function updatePet(req, res) {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const updates = normalizePetPayload(req.body);
 
     const updated = await Pet.update(id, updates);
     return res.status(200).json(updated);

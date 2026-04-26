@@ -14,12 +14,60 @@ function normalizeName(name) {
   return trimmed;
 }
 
+function normalizeSpecies(species) {
+  if (species === undefined) return null;
+  if (species === null) return null;
+  if (typeof species !== "string") {
+    throw new Error("pet species must be a string");
+  }
+
+  const trimmed = species.trim();
+  if (trimmed === "") return null;
+  if (trimmed.length > 60) {
+    throw new Error("pet species cannot exceed 60 characters");
+  }
+  return trimmed;
+}
+
+function normalizeBreed(breed, { keepUndefined = false } = {}) {
+  if (breed === undefined) {
+    return keepUndefined ? undefined : null;
+  }
+  if (breed === null) return null;
+  if (typeof breed !== "string") {
+    throw new Error("invalid breed");
+  }
+
+  const trimmed = breed.trim();
+  if (trimmed === "") return null;
+  if (trimmed.length > 60) {
+    throw new Error("breed cannot exceed 60 characters");
+  }
+  return trimmed;
+}
+
 function validateId(id) {
   const numeric = Number(id);
   if (!Number.isInteger(numeric) || numeric <= 0) {
     throw new Error("invalid id");
   }
   return numeric;
+}
+
+async function assertWeightClassExists(weightClassId) {
+  const { rows } = await pool.query(
+    `
+    SELECT id
+    FROM weight_classes
+    WHERE id = $1
+    LIMIT 1
+    `,
+    [weightClassId]
+  );
+
+  if (!rows[0]) {
+    throw new Error("Invalid weight class");
+  }
 }
 
 /* ----------------------------- queries ----------------------------- */
@@ -29,7 +77,7 @@ function validateId(id) {
  */
 export async function findAll() {
   const { rows } = await pool.query(
-    "SELECT id, name, breed, owner, uuid, weight_class_id, created_at, updated_at FROM pets ORDER BY id DESC"
+    "SELECT id, name, species AS pet_species, breed, owner, uuid, weight_class_id, created_at, updated_at FROM pets ORDER BY id DESC"
   );
   return rows;
 }
@@ -39,12 +87,10 @@ export async function findByOwner(ownerId) {
 
   const { rows } = await pool.query(
     `
-    SELECT p.id, p.name, p.uuid, p.created_at, p.updated_at, p.weight_class_id,
-           s.id AS breed_id, s.name AS breed
-    FROM pets p
-    JOIN breeds s ON p.breed = s.id
-    WHERE p.owner = $1
-    ORDER BY p.created_at DESC
+    SELECT id, name, species AS pet_species, breed, owner, weight_class_id, uuid, created_at, updated_at
+    FROM pets
+    WHERE owner = $1
+    ORDER BY created_at DESC
     `,
     [id]
   );
@@ -60,7 +106,7 @@ export async function findById(id) {
 
   const { rows } = await pool.query(
     `
-    SELECT id, name, breed, owner, weight_class_id, uuid, created_at, updated_at
+    SELECT id, name, species AS pet_species, breed, owner, weight_class_id, uuid, created_at, updated_at
     FROM pets
     WHERE id = $1
     `,
@@ -79,43 +125,38 @@ export async function create({
   owner,
   weightClassId,
   weight_class_id,
+  pet_species,
+  species,
 }) {
   const normalizedName = normalizeName(name);
-  const breedId = validateId(breed);
+  const normalizedSpecies = normalizeSpecies(pet_species ?? species);
+  const normalizedBreed = normalizeBreed(breed);
   const ownerId = validateId(owner);
   const resolvedWeightClassId = weightClassId ?? weight_class_id;
   const validatedWeightClassId = validateId(resolvedWeightClassId);
 
-  try {
-    const weightClass = await pool.query(
-      `SELECT id FROM weight_classes WHERE id = $1`,
-      [validatedWeightClassId]
-    );
+  await assertWeightClassExists(validatedWeightClassId);
 
-    if (!weightClass.rows?.length) {
-      throw new Error("Invalid weight class");
-    }
-  } catch (err) {
-    if (err.code === "23503") {
-      throw new Error("Invalid weight class");
-    }
-    throw err;
-  }
   try {
     const { rows } = await pool.query(
       `
-      INSERT INTO pets (name, breed, owner, weight_class_id)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, name, breed, owner, weight_class_id, uuid, created_at, updated_at
+      INSERT INTO pets (name, species, breed, owner, weight_class_id)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, name, species AS pet_species, breed, owner, weight_class_id, uuid, created_at, updated_at
       `,
-      [normalizedName, breedId, ownerId, validatedWeightClassId]
+      [
+        normalizedName,
+        normalizedSpecies,
+        normalizedBreed,
+        ownerId,
+        validatedWeightClassId,
+      ]
     );
 
     return rows[0];
   } catch (err) {
-    // FK violation
     if (err.code === "23503") {
-      throw new Error("invalid breed or owner");
+      throw new Error("invalid owner");
     }
     throw err;
   }
@@ -142,41 +183,34 @@ export async function update(id, updates) {
     values.push(normalized);
   }
 
-  if("owner" in updates){
+  if ("owner" in updates) {
     const ownerId = validateId(updates.owner);
     fields.push(`owner = $${index++}`);
     values.push(ownerId);
-
-      try {
-      await pool.query(`SELECT id FROM clients WHERE id = $1`, [
-        ownerId
-      ]);
-    } catch (err) {
-      if (err.code === "23503") {
-        throw new Error("Invalid owner");
-      }
-    }
   }
 
   // ---- breed ----
   if ("breed" in updates) {
-    const breedId = validateId(updates.breed);
-    fields.push(`breed = $${index++}`);
-    values.push(breedId);
+    const normalizedBreed = normalizeBreed(updates.breed, { keepUndefined: true });
+    if (normalizedBreed !== undefined) {
+      fields.push(`breed = $${index++}`);
+      values.push(normalizedBreed);
+    }
   }
 
-  if ("weightClassId" in updates) {
-    const weightClassId = validateId(updates.weightClassId);
+  // ---- species ----
+  if ("pet_species" in updates || "species" in updates) {
+    const normalizedSpecies = normalizeSpecies(
+      "pet_species" in updates ? updates.pet_species : updates.species,
+    );
+    fields.push(`species = $${index++}`);
+    values.push(normalizedSpecies);
+  }
 
-    try {
-      await pool.query(`SELECT id FROM weight_classes WHERE id = $1`, [
-        weightClassId
-      ]);
-    } catch (err) {
-      if (err.code === "23503") {
-        throw new Error("Invalid weight class");
-      }
-    }
+  const nextWeightClassId = updates.weightClassId ?? updates.weight_class_id;
+  if (nextWeightClassId !== undefined) {
+    const weightClassId = validateId(nextWeightClassId);
+    await assertWeightClassExists(weightClassId);
 
     fields.push(`weight_class_id = $${index++}`);
     values.push(weightClassId);
@@ -195,7 +229,7 @@ export async function update(id, updates) {
       SET ${fields.join(", ")},
           updated_at = NOW()
       WHERE id = $${index}
-      RETURNING id, name, breed, owner, uuid, weight_class_id, created_at, updated_at
+      RETURNING id, name, species AS pet_species, breed, owner, uuid, weight_class_id, created_at, updated_at
       `,
       values
     );
@@ -207,7 +241,7 @@ export async function update(id, updates) {
     return rows[0];
   } catch (err) {
     if (err.code === "23503") {
-      throw new Error("invalid breed");
+      throw new Error("invalid owner");
     }
     throw err;
   }

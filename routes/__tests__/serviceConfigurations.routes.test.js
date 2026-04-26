@@ -23,7 +23,6 @@ describe("Service Configuration Routes", () => {
   describe("GET /service-configurations", () => {
     it("returns configuration", async () => {
       const mockConfig = {
-        breed_id: 1,
         service_id: 2,
         weight_class_id: 3,
         price: 50,
@@ -34,29 +33,29 @@ describe("Service Configuration Routes", () => {
       Config.findOne.mockResolvedValue(mockConfig);
 
       const res = await request(app).get(
-        "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
+        "/service-configurations?service_id=2&weight_class_id=3"
       );
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockConfig);
-      expect(Config.findOne).toHaveBeenCalledWith("1", "2", "3");
+      expect(Config.findOne).toHaveBeenCalledWith("2", "3");
     });
 
     it("returns 404 if not found", async () => {
       Config.findOne.mockResolvedValue(null);
 
       const res = await request(app).get(
-        "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
+        "/service-configurations?service_id=2&weight_class_id=3"
       );
 
       expect(res.status).toBe(404);
     });
 
     it("returns 400 for invalid input", async () => {
-      Config.findOne.mockRejectedValue(new Error("invalid breed_id"));
+      Config.findOne.mockRejectedValue(new Error("invalid service_id"));
 
       const res = await request(app).get(
-        "/service-configurations?breed_id=bad&service_id=2&weight_class_id=3"
+        "/service-configurations?service_id=bad&weight_class_id=3"
       );
 
       expect(res.status).toBe(400);
@@ -69,8 +68,8 @@ describe("Service Configuration Routes", () => {
   describe("GET /service-configurations/service/:serviceId", () => {
     it("returns all configs for a service", async () => {
       const mockRows = [
-        { breed_id: 1, service_id: 2, weight_class_id: 1 },
-        { breed_id: 1, service_id: 2, weight_class_id: 2 },
+        { service_id: 2, weight_class_id: 1 },
+        { service_id: 2, weight_class_id: 2 },
       ];
 
       Config.findByService.mockResolvedValue(mockRows);
@@ -101,8 +100,8 @@ describe("Service Configuration Routes", () => {
   describe("GET /service-configurations/service/:serviceId/grouped-by-weight-class", () => {
     it("returns one config row per weight class for a service", async () => {
       const groupedRows = [
-        { id: 1, breed_id: 1, service_id: 2, weight_class_id: 1 },
-        { id: 3, breed_id: 3, service_id: 2, weight_class_id: 2 },
+        { id: 1, service_id: 2, weight_class_id: 1 },
+        { id: 3, service_id: 2, weight_class_id: 2 },
       ];
 
       Config.findByServiceGroupedByWeightClass.mockResolvedValue(groupedRows);
@@ -135,7 +134,6 @@ describe("Service Configuration Routes", () => {
   describe("POST /service-configurations", () => {
     it("creates configuration", async () => {
       const created = {
-        breed_id: 1,
         service_id: 2,
         weight_class_id: 3,
         price: 40,
@@ -160,7 +158,6 @@ describe("Service Configuration Routes", () => {
       const res = await request(app)
         .post("/service-configurations")
         .send({
-          breed_id: 1,
           service_id: 2,
           weight_class_id: 3,
           price: -1,
@@ -178,7 +175,6 @@ describe("Service Configuration Routes", () => {
       const res = await request(app)
         .post("/service-configurations")
         .send({
-          breed_id: 1,
           service_id: 2,
           weight_class_id: 3,
           price: 40,
@@ -195,7 +191,6 @@ describe("Service Configuration Routes", () => {
   describe("PATCH /service-configurations", () => {
     it("updates configuration", async () => {
       const updated = {
-        breed_id: 1,
         service_id: 2,
         weight_class_id: 3,
         price: 45,
@@ -207,13 +202,13 @@ describe("Service Configuration Routes", () => {
 
       const res = await request(app)
         .patch(
-          "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
+          "/service-configurations?service_id=2&weight_class_id=3"
         )
         .send({ price: 45 });
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(updated);
-      expect(Config.update).toHaveBeenCalledWith("1", "2", "3", {
+      expect(Config.update).toHaveBeenCalledWith("2", "3", {
         price: 45,
       });
     });
@@ -225,7 +220,7 @@ describe("Service Configuration Routes", () => {
 
       const res = await request(app)
         .patch(
-          "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
+          "/service-configurations?service_id=2&weight_class_id=3"
         )
         .send({ price: 45 });
 
@@ -239,7 +234,7 @@ describe("Service Configuration Routes", () => {
 
       const res = await request(app)
         .patch(
-          "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
+          "/service-configurations?service_id=2&weight_class_id=3"
         )
         .send({});
 
@@ -255,11 +250,11 @@ describe("Service Configuration Routes", () => {
       Config.remove.mockResolvedValue(true);
 
       const res = await request(app).delete(
-        "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
+        "/service-configurations?service_id=2&weight_class_id=3"
       );
 
       expect(res.status).toBe(204);
-      expect(Config.remove).toHaveBeenCalledWith("1", "2", "3");
+      expect(Config.remove).toHaveBeenCalledWith("2", "3");
     });
 
     it("returns 404 if not found", async () => {
@@ -268,7 +263,7 @@ describe("Service Configuration Routes", () => {
       );
 
       const res = await request(app).delete(
-        "/service-configurations?breed_id=1&service_id=2&weight_class_id=3"
+        "/service-configurations?service_id=2&weight_class_id=3"
       );
 
       expect(res.status).toBe(404);
@@ -278,7 +273,7 @@ describe("Service Configuration Routes", () => {
       Config.remove.mockRejectedValue(new Error("invalid service_id"));
 
       const res = await request(app).delete(
-        "/service-configurations?breed_id=1&service_id=bad&weight_class_id=3"
+        "/service-configurations?service_id=bad&weight_class_id=3"
       );
 
       expect(res.status).toBe(400);

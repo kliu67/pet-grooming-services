@@ -14,7 +14,7 @@ function normalizeName(name) {
  */
 export async function findAll() {
   const { rows } = await pool.query(
-    `SELECT id, name, created_at FROM breeds ORDER BY name ASC`
+    `SELECT id, name, created_at, permitted FROM breeds ORDER BY name ASC`
   );
   return rows;
 }

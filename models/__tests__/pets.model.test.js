@@ -18,7 +18,7 @@ import {
 } from "../pets.model.js";
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
 });
 
 //
@@ -70,7 +70,7 @@ describe("findById", () => {
 //
 describe("create", () => {
   it("throws if name invalid", async () => {
-    await expect(create({ name: "", breed: 1, owner: 1, weightClassId: 1 })).rejects.toThrow(
+    await expect(create({ name: "", breed: "Poodle", owner: 1, weightClassId: 1 })).rejects.toThrow(
       "pet name cannot be empty"
     );
   });
@@ -78,34 +78,117 @@ describe("create", () => {
   it("throws if breed invalid", async () => {
     await expect(
       create({ name: "Buddy", breed: 0, owner: 1, weightClassId: 1 })
-    ).rejects.toThrow("invalid id");
+    ).rejects.toThrow("invalid breed");
+  });
+
+  it("creates pet when breed is omitted", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // weight class lookup
+      .mockResolvedValueOnce({ rows: [{ id: 4, name: "Buddy", breed: null }] }); // insert
+
+    const result = await create({
+      name: "Buddy",
+      owner: 1,
+      weightClassId: 1,
+    });
+
+    expect(result).toEqual({ id: 4, name: "Buddy", breed: null });
+    expect(pool.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("INSERT INTO pets (name, species, breed, owner, weight_class_id)"),
+      ["Buddy", null, null, 1, 1],
+    );
   });
 
   it("throws if owner invalid", async () => {
     await expect(
-      create({ name: "Buddy", breed: 1, owner: 0, weightClassId: 1 })
+      create({ name: "Buddy", breed: "Poodle", owner: 0, weightClassId: 1 })
     ).rejects.toThrow("invalid id");
   });
 
   it("throws if weight class is missing", async () => {
     await expect(
-      create({ name: "Buddy", breed: 1, owner: 1 })
+      create({ name: "Buddy", breed: "Poodle", owner: 1 })
     ).rejects.toThrow("invalid id");
   });
 
   it("creates and returns row", async () => {
     const mockRow = { id: 1, name: "Buddy" };
-    pool.query.mockResolvedValue({ rows: [mockRow] });
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // weight class lookup
+      .mockResolvedValueOnce({ rows: [mockRow] }); // insert
 
     const result = await create({
       name: "Buddy",
-      breed: 1,
+      breed: "Poodle",
       owner: 1,
       weightClassId: 1,
     });
 
     expect(result).toEqual(mockRow);
     expect(pool.query).toHaveBeenCalled();
+  });
+
+  it("creates pet with optional pet_species", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // weight class lookup
+      .mockResolvedValueOnce({ rows: [{ id: 2, pet_species: "dog" }] }); // insert
+
+    await create({
+      name: "Buddy",
+      breed: "Poodle",
+      owner: 1,
+      weightClassId: 1,
+      pet_species: "dog",
+    });
+
+    expect(pool.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("INSERT INTO pets (name, species, breed, owner, weight_class_id)"),
+      ["Buddy", "dog", "Poodle", 1, 1],
+    );
+  });
+
+  it("creates pet when breed is provided as string", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // weight class lookup
+      .mockResolvedValueOnce({ rows: [{ id: 3, name: "Buddy" }] }); // insert
+
+    const result = await create({
+      name: "Buddy",
+      breed: "Poodle",
+      owner: 1,
+      weightClassId: 1,
+    });
+
+    expect(result).toEqual({ id: 3, name: "Buddy" });
+  });
+
+  it("accepts any non-empty breed string", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // weight class lookup
+      .mockResolvedValueOnce({ rows: [{ id: 9, name: "Buddy", breed: "UnknownBreed" }] }); // insert
+
+    await expect(
+      create({
+        name: "Buddy",
+        breed: "UnknownBreed",
+        owner: 1,
+        weightClassId: 1,
+      }),
+    ).resolves.toEqual({ id: 9, name: "Buddy", breed: "UnknownBreed" });
+  });
+
+  it("throws if pet species exceeds 60 characters", async () => {
+    await expect(
+      create({
+        name: "Buddy",
+        breed: "Poodle",
+        owner: 1,
+        weightClassId: 1,
+        pet_species: "a".repeat(61),
+      }),
+    ).rejects.toThrow("pet species cannot exceed 60 characters");
   });
 
   it("handles FK violation", async () => {
@@ -116,11 +199,11 @@ describe("create", () => {
     await expect(
       create({
         name: "Buddy",
-        breed: 999,
+        breed: "Poodle",
         owner: 1,
         weightClassId: 1,
       })
-    ).rejects.toThrow("invalid breed or owner");
+    ).rejects.toThrow("invalid owner");
   });
 });
 
@@ -130,7 +213,7 @@ it("handles invalid weight class FK", async () => {
   await expect(
     create({
       name: "Buddy",
-      breed: 1,
+      breed: "Poodle",
       owner: 1,
       weightClassId: 999,
     })
@@ -160,6 +243,34 @@ describe("update", () => {
     expect(result).toEqual(mockRow);
   });
 
+  it("updates pet_species when provided", async () => {
+    pool.query.mockResolvedValue({ rows: [{ id: 1, pet_species: "cat" }] });
+
+    const result = await update(1, { pet_species: "cat" });
+
+    expect(result).toEqual({ id: 1, pet_species: "cat" });
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("species = $1"),
+      ["cat", 1],
+    );
+  });
+
+  it("updates breed when breed is provided as string", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [{ id: 1, breed: "Poodle" }] }); // update
+
+    const result = await update(1, { breed: "Poodle" });
+
+    expect(result).toEqual({ id: 1, breed: "Poodle" });
+  });
+
+  it("updates breed to null when breed is empty string", async () => {
+    pool.query.mockResolvedValue({ rows: [{ id: 1, breed: null }] });
+
+    const result = await update(1, { breed: "" });
+
+    expect(result).toEqual({ id: 1, breed: null });
+  });
+
   it("throws if pet not found", async () => {
     pool.query.mockResolvedValue({ rows: [] });
 
@@ -169,13 +280,13 @@ describe("update", () => {
   it("handles invalid breed FK", async () => {
     pool.query.mockRejectedValue({ code: "23503" });
 
-    await expect(update(1, { breed: 999 })).rejects.toThrow(
-      "invalid breed"
+    await expect(update(1, { owner: 999 })).rejects.toThrow(
+      "invalid owner"
     );
   });
 
   it("handles invalid weight class FK", async () => {
-    pool.query.mockRejectedValue({ code: "23503" });
+    pool.query.mockResolvedValueOnce({ rows: [] });
 
     await expect(update(1, { weightClassId: 999 })).rejects.toThrow(
       "Invalid weight class"

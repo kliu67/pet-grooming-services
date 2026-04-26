@@ -51,7 +51,7 @@ describe("Pet Routes", () => {
   ===================================================== */
   describe("GET /pets/:id", () => {
     it("returns pet by id", async () => {
-      const mockPet = { id: 1, name: "Buddy" };
+      const mockPet = { id: 1, name: "Buddy", pet_species: "dog" };
       Pet.findById.mockResolvedValue(mockPet);
 
       const res = await request(app).get("/pets/1");
@@ -87,6 +87,7 @@ describe("Pet Routes", () => {
       const newPet = {
         id: 1,
         name: "Buddy",
+        pet_species: "dog",
         breed: 1,
         owner: 1,
         weight_class_id: 2,
@@ -96,12 +97,19 @@ describe("Pet Routes", () => {
 
       const res = await request(app)
         .post("/pets")
-        .send({ name: "Buddy", breed: 1, owner: 1, weightClassId: 2 });
+        .send({
+          name: "Buddy",
+          pet_species: "dog",
+          breed: 1,
+          owner: 1,
+          weightClassId: 2,
+        });
 
       expect(res.status).toBe(201);
       expect(res.body).toEqual(newPet);
       expect(Pet.create).toHaveBeenCalledWith({
         name: "Buddy",
+        pet_species: "dog",
         breed: 1,
         owner: 1,
         weightClassId: 2,
@@ -128,6 +136,38 @@ describe("Pet Routes", () => {
       expect(res.body.error).toContain("weightClassId");
       expect(Pet.create).not.toHaveBeenCalled();
     });
+
+    it("creates a pet when breed is omitted", async () => {
+      const newPet = {
+        id: 2,
+        name: "Mochi",
+        pet_species: "dog",
+        breed: null,
+        owner: 1,
+        weight_class_id: 2,
+      };
+
+      Pet.create.mockResolvedValue(newPet);
+
+      const res = await request(app)
+        .post("/pets")
+        .send({
+          name: "Mochi",
+          pet_species: "dog",
+          owner: 1,
+          weightClassId: 2,
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual(newPet);
+      expect(Pet.create).toHaveBeenCalledWith({
+        name: "Mochi",
+        pet_species: "dog",
+        breed: undefined,
+        owner: 1,
+        weightClassId: 2,
+      });
+    });
   });
 
   /* =====================================================
@@ -138,6 +178,7 @@ describe("Pet Routes", () => {
       const updatedPet = {
         id: 1,
         name: "Buddy Updated",
+        pet_species: "dog",
         breed: 1,
         owner: 1,
       };
