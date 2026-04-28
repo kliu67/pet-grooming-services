@@ -521,7 +521,7 @@ describe("book()", () => {
         start_time: new Date(FUTURE_START).setHours(18, 0, 0),
       }),
     ).rejects.toThrow(
-      "appointment end time is later than stylist 2's available window",
+      /appointment end time .* is later than stylist 2's available window/,
     );
   });
 
@@ -1101,7 +1101,9 @@ describe("update()", () => {
         serviceId: 999,
       }),
     ).rejects.toThrow(
-      `appointment end time is later than stylist ${mockAppointment.stylist_id}'s available window`,
+      new RegExp(
+        `appointment end time .* is later than stylist ${mockAppointment.stylist_id}'s available window`,
+      ),
     );
   });
 
@@ -1213,7 +1215,9 @@ describe("update()", () => {
         startTime: new Date("2028-03-06 16:50:00.000 -0500"),
       }),
     ).rejects.toThrow(
-      `appointment end time is later than stylist ${mockAppointment.stylist_id}'s available window`,
+      new RegExp(
+        `appointment end time .* is later than stylist ${mockAppointment.stylist_id}'s available window`,
+      ),
     );
   });
 
