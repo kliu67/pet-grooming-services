@@ -285,60 +285,6 @@ describe("book()", () => {
     expect(mockRelease).toHaveBeenCalled();
   });
 
-  it("serializes timezone-less booking input in the business timezone", async () => {
-    mockQuery
-      .mockResolvedValueOnce() // BEGIN
-      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) // pet lock
-      .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // stylist exists
-      .mockResolvedValueOnce({
-        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
-      }) // client snapshot
-      .mockResolvedValueOnce({ rows: [{ id: 1, name: "Bath" }] }) // service exists
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            id: 10,
-            price: 50,
-            duration_minutes: 60,
-            buffer_minutes: 20,
-            service_name: "Bath",
-          },
-        ],
-      }) // config
-      .mockResolvedValueOnce({ rows: availabilityRows }) // availability
-      .mockResolvedValueOnce({ rows: timeOffRows }) // time offs
-      .mockResolvedValueOnce({ rows: [] }) // overlap check
-      .mockResolvedValueOnce({ rows: [{ id: 101, status: "booked" }] }) // insert
-      .mockResolvedValueOnce(); // COMMIT
-
-    await book({
-      client_id: 1,
-      pet_id: 1,
-      service_id: 1,
-      service_configuration_id: 10,
-      stylist_id: 2,
-      start_time: "2099-01-01 10:00:00",
-    });
-
-    expect(mockQuery).toHaveBeenNthCalledWith(
-      10,
-      expect.stringContaining("INSERT INTO appointments"),
-      [
-        1,
-        1,
-        1,
-        2,
-        "2099-01-01T15:00:00.000Z",
-        "2099-01-01T16:00:00.000Z",
-        "2099-01-01T16:20:00.000Z",
-        50,
-        60,
-        null,
-        null,
-      ],
-    );
-  });
-
   it("throws mapped FK error (23503)", async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN

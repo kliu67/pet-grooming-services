@@ -7,11 +7,6 @@ import {
 } from "../validators/validator.js";
 import { isValidEmail } from "../utils/helpers.js";
 
-const BUSINESS_TIME_ZONE = process.env.BUSINESS_TIME_ZONE || "America/Toronto";
-const ISO_OFFSET_SUFFIX = /(Z|[+-]\d{1,2}:?\d{2})$/i;
-const NAIVE_DATE_TIME =
-  /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/;
-
 
 // const DB_FIELDS = {
 //   appointments: {
@@ -45,96 +40,12 @@ function validateUuid(uuid, name = "uuid") {
   return trimmed;
 }
 
-function getTimeZoneOffsetMillis(date, timeZone) {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  });
-
-  const parts = Object.fromEntries(
-    formatter
-      .formatToParts(date)
-      .filter((part) => part.type !== "literal")
-      .map((part) => [part.type, part.value]),
-  );
-
-  const zonedUtcMillis = Date.UTC(
-    Number(parts.year),
-    Number(parts.month) - 1,
-    Number(parts.day),
-    Number(parts.hour),
-    Number(parts.minute),
-    Number(parts.second),
-  );
-
-  return zonedUtcMillis - date.getTime();
-}
-
-function parseNaiveDateTimeInTimeZone(value, timeZone = BUSINESS_TIME_ZONE) {
-  const match = String(value).trim().match(NAIVE_DATE_TIME);
-  if (!match) return new Date(NaN);
-
-  const [
-    ,
-    year,
-    month,
-    day,
-    hour,
-    minute,
-    second = "00",
-    millisecond = "0",
-  ] = match;
-
-  const naiveUtcMillis = Date.UTC(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-    Number(second),
-    Number(millisecond.padEnd(3, "0")),
-  );
-
-  let parsed = new Date(naiveUtcMillis);
-  let offset = getTimeZoneOffsetMillis(parsed, timeZone);
-  parsed = new Date(naiveUtcMillis - offset);
-
-  const adjustedOffset = getTimeZoneOffsetMillis(parsed, timeZone);
-  if (adjustedOffset !== offset) {
-    parsed = new Date(naiveUtcMillis - adjustedOffset);
-  }
-
-  return parsed;
-}
-
 function validateTime(startTime) {
-  let t;
-
-  if (startTime instanceof Date) {
-    t = new Date(startTime.getTime());
-  } else if (typeof startTime === "string") {
-    const trimmed = startTime.trim();
-    t = ISO_OFFSET_SUFFIX.test(trimmed)
-      ? new Date(trimmed)
-      : parseNaiveDateTimeInTimeZone(trimmed);
-  } else {
-    t = new Date(startTime);
-  }
-
+  const t = new Date(startTime);
   if (Number.isNaN(t.getTime())) {
     throw new Error("invalid start_time");
   }
   return t;
-}
-
-function toPgTimestamp(dateTime) {
-  return dateTime instanceof Date ? dateTime.toISOString() : dateTime;
 }
 
 function assertDateTimeNotInThePast(dateTime) {
@@ -279,7 +190,7 @@ async function assertNoAppointmentOverlap(
   end,
   excludeAppointmentId = null,
 ) {
-  const params = [stylistId, toPgTimestamp(start), toPgTimestamp(end)];
+  const params = [stylistId, start, end];
   let excludeClause = "";
 
   if (excludeAppointmentId) {
@@ -749,9 +660,9 @@ export async function book({
         petId,
         serviceId,
         stylistId,
-        toPgTimestamp(start),
-        toPgTimestamp(end),
-        toPgTimestamp(effectiveEnd),
+        start,
+        end,
+        effectiveEnd,
         config.price,
         config.duration_minutes,
         description,
@@ -932,9 +843,9 @@ export async function bookFromScratch({
         pet.id,
         serviceId,
         stylistId,
-        toPgTimestamp(start),
-        toPgTimestamp(end),
-        toPgTimestamp(effectiveEnd),
+        start,
+        end,
+        effectiveEnd,
         config.price,
         config.duration_minutes,
         description,
@@ -1148,11 +1059,11 @@ export async function update(id, updates) {
       );
       //push new start, end, effectiveend
       fields.push(`start_time = $${index++}`);
-      values.push(toPgTimestamp(start));
+      values.push(start);
       fields.push(`end_time = $${index++}`);
-      values.push(toPgTimestamp(end));
+      values.push(end);
       fields.push(`effective_end_time = $${index++}`);
-      values.push(toPgTimestamp(effectiveEnd));
+      values.push(effectiveEnd);
     }
 
     if ("description" in updates) {

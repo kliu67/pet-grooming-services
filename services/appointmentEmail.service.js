@@ -1,7 +1,5 @@
 import nodemailer from "nodemailer";
 
-const BUSINESS_TIME_ZONE = process.env.BUSINESS_TIME_ZONE || "America/Toronto";
-
 function maskEmail(email) {
   if (!email) return null;
   const normalized = String(email).trim();
@@ -31,7 +29,7 @@ function formatWhen(value) {
   return new Intl.DateTimeFormat("en-CA", {
     dateStyle: "full",
     timeStyle: "short",
-    timeZone: BUSINESS_TIME_ZONE,
+    timeZone: "America/Toronto",
   }).format(date);
 }
 
