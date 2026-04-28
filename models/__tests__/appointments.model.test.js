@@ -285,6 +285,47 @@ describe("book()", () => {
     expect(mockRelease).toHaveBeenCalled();
   });
 
+  it("accepts a UTC booking that falls inside the business-time availability window", async () => {
+    mockQuery
+      .mockResolvedValueOnce() // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) // pet lock
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // stylist exists
+      .mockResolvedValueOnce({
+        rows: [{ id: 1, first_name: "Kai", last_name: "Li" }],
+      }) // client snapshot
+      .mockResolvedValueOnce({ rows: [{ id: 1, name: "Bath" }] }) // service exists
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 10,
+            price: 50,
+            duration_minutes: 90,
+            buffer_minutes: 20,
+            service_name: "Bath",
+          },
+        ],
+      }) // config
+      .mockResolvedValueOnce({
+        rows: [{ day_of_week: 5, start_time: "09:00:00", end_time: "17:00:00" }],
+      }) // Friday availability
+      .mockResolvedValueOnce({ rows: [] }) // time offs
+      .mockResolvedValueOnce({ rows: [] }) // overlap check
+      .mockResolvedValueOnce({ rows: [{ id: 100, status: "booked" }] }) // insert
+      .mockResolvedValueOnce(); // COMMIT
+
+    const result = await book({
+      client_id: 1,
+      pet_id: 1,
+      service_id: 1,
+      service_configuration_id: 10,
+      stylist_id: 1,
+      start_time: "2026-05-01T17:00:00.000Z",
+    });
+
+    expect(result).toEqual({ id: 100, status: "booked" });
+    expect(mockRelease).toHaveBeenCalled();
+  });
+
   it("throws mapped FK error (23503)", async () => {
     mockQuery
       .mockResolvedValueOnce() // BEGIN

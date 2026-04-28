@@ -1,11 +1,33 @@
 import { pool } from "../db.js";
-import { parseTimeToMinutes, parseDateToMinutes } from "../utils/timeRanges.js";
+import { parseTimeToMinutes } from "../utils/timeRanges.js";
 import { areIntervalsOverlapping } from "date-fns";
 import {
   validateDescription,
   validateStatus,
 } from "../validators/validator.js";
 import { isValidEmail } from "../utils/helpers.js";
+
+const BUSINESS_TIME_ZONE = process.env.BUSINESS_TIME_ZONE || "America/Toronto";
+const businessDateTimeFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: BUSINESS_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  weekday: "short",
+  hourCycle: "h23",
+});
+const weekdayToDow = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
 
 
 // const DB_FIELDS = {
@@ -40,6 +62,25 @@ function validateUuid(uuid, name = "uuid") {
   return trimmed;
 }
 
+function getBusinessDateTimeParts(date) {
+  const parts = Object.fromEntries(
+    businessDateTimeFormatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+    second: Number(parts.second),
+    dayOfWeek: weekdayToDow[parts.weekday],
+  };
+}
+
 function validateTime(startTime) {
   const t = new Date(startTime);
   if (Number.isNaN(t.getTime())) {
@@ -65,10 +106,13 @@ function assertEndTimeIsAfterStart(start, end) {
 }
 
 function assertStartEndOnSameDay(start, end) {
+  const startParts = getBusinessDateTimeParts(start);
+  const endParts = getBusinessDateTimeParts(end);
+
   if (
-    start.getDate() !== end.getDate() ||
-    start.getMonth() !== end.getMonth() ||
-    start.getFullYear() !== end.getFullYear()
+    startParts.day !== endParts.day ||
+    startParts.month !== endParts.month ||
+    startParts.year !== endParts.year
   ) {
     throw new Error("start time and end time must be on the same day");
   }
@@ -127,16 +171,17 @@ async function getBreedByName(dbClient, breedName) {
 }
 
 function assertStylistIsAvailable(availabilityData, stylistId, start, end) {
-  // const dayOfWeek = start.getDay();
+  const startParts = getBusinessDateTimeParts(start);
+  const endParts = getBusinessDateTimeParts(end);
   const availableTime = availabilityData.find(
-    (a) => a.day_of_week === start.getDay(),
+    (a) => a.day_of_week === startParts.dayOfWeek,
   );
   if (availableTime) {
     //check stylist is available on this day of week
     const availabilityStartMinutes = parseTimeToMinutes(
       availableTime.start_time,
     );
-    const startMinutes = parseDateToMinutes(start);
+    const startMinutes = startParts.hour * 60 + startParts.minute;
 
     if (startMinutes < availabilityStartMinutes) {
       //check appointment time is equal to or later than the availabile start time
@@ -146,7 +191,7 @@ function assertStylistIsAvailable(availabilityData, stylistId, start, end) {
     }
 
     const availabilityEndMinutes = parseTimeToMinutes(availableTime.end_time);
-    const endMinutes = parseDateToMinutes(end);
+    const endMinutes = endParts.hour * 60 + endParts.minute;
     if (endMinutes > availabilityEndMinutes) {
       throw new Error(
         `appointment end time - ${end} is later than stylist ${stylistId}'s available window`,
