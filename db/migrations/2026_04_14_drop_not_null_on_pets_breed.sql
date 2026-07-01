@@ -1,0 +1,2 @@
+ALTER TABLE public.pets
+ALTER COLUMN breed DROP NOT NULL;

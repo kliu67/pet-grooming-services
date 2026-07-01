@@ -1,0 +1,2 @@
+ALTER TABLE public.breeds
+ALTER COLUMN permitted SET DEFAULT TRUE;

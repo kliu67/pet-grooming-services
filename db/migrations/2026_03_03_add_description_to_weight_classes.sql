@@ -1,0 +1,4 @@
+BEGIN;
+ALTER TABLE weight_classes
+ADD COLUMN IF NOT EXISTS description TEXT;
+COMMIT;

@@ -1,0 +1,18 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS citext;
+
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+
+  email CITEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+
+  role TEXT NOT NULL DEFAULT 'client',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_login_at TIMESTAMPTZ
+);
+
+COMMIT;

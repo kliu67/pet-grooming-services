@@ -1,0 +1,19 @@
+{
+    "clients":[
+        {
+            "first_name": "John",
+            "last_name": "Smith",
+            "phone": "123-456-7890",
+            "email": "johnsmith@petmail.com",
+            "description": "description"
+        },
+
+        {
+             "first_name": "Susan",
+            "last_name": "Adams",
+            "phone": "3141592653",
+            "email": "",
+            "description": ""
+        }
+    ]
+}

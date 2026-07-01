@@ -1,0 +1,2 @@
+ALTER TABLE public.services
+ADD COLUMN IF NOT EXISTS species VARCHAR(60);
