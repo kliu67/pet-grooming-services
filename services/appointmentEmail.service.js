@@ -55,6 +55,7 @@ function buildCustomerText({
 
 function buildInternalNotificationText({
   customerName,
+  customerPhone,
   customerEmail,
   petName,
   serviceName,
@@ -63,10 +64,11 @@ function buildInternalNotificationText({
   appointmentNumber,
 }) {
   return [
-    "New appointment booked from scratch.",
+    "New appointment booked.",
     "",
     `Appointment: ${appointmentNumber ?? "Pending ID"}`,
     `Customer: ${customerName || "N/A"}`,
+    `Customer Phone: ${customerPhone || "N/A"}`,
     `Customer Email: ${customerEmail || "N/A"}`,
     `Pet: ${petName ?? "N/A"}`,
     `Breed: ${breedName ?? "N/A"}`,
@@ -144,6 +146,7 @@ export async function verifyEmailTransport() {
 export async function sendAppointmentCreatedEmail({
   to,
   customerName,
+  customerPhone,
   petName,
   startTime,
   appointmentNumber,
@@ -210,6 +213,7 @@ export async function sendAppointmentCreatedEmail({
       : "New booking alert";
     const internalText = buildInternalNotificationText({
       customerName,
+      customerPhone,
       customerEmail: to,
       petName,
       serviceName,

@@ -101,6 +101,7 @@ export async function bookAppointmentFromScratch(req, res) {
       await sendAppointmentCreatedEmail({
         to: req.body.email,
         customerName: `${req.body.first_name ?? ""} ${req.body.last_name ?? ""}`.trim(),
+        customerPhone: req.body.phone,
         petName: req.body.pet_name,
         serviceName:
           shapedAppointment.service_name ??
