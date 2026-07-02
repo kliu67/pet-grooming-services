@@ -40,6 +40,7 @@ describe("appointmentEmail.service", () => {
     await sendAppointmentCreatedEmail({
       to: "kai@example.com",
       customerName: "Kai Li",
+      customerPhone: "1234567890",
       petName: "Mochi",
       serviceName: "Full Groom",
       breedName: "Poodle",
@@ -60,7 +61,8 @@ describe("appointmentEmail.service", () => {
 
     expect(internalMail.to).toBe("bookings@yourdomain.com");
     expect(internalMail.subject).toBe("New booking alert (APT-00000500)");
-    expect(internalMail.text).toContain("New appointment booked from scratch.");
+    expect(internalMail.text).toContain("New appointment booked.");
+    expect(internalMail.text).toContain("Customer Phone: 1234567890");
     expect(internalMail.text).toContain("Customer Email: kai@example.com");
     expect(internalMail.text).toContain("Breed: Poodle");
     expect(internalMail.text).toContain("Service: Full Groom");

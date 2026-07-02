@@ -319,7 +319,7 @@ describe("book()", () => {
       service_id: 1,
       service_configuration_id: 10,
       stylist_id: 1,
-      start_time: "2026-05-01T17:00:00.000Z",
+      start_time: "2027-05-01T17:00:00.000Z",
     });
 
     expect(result).toEqual({ id: 100, status: "booked" });
