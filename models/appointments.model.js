@@ -190,7 +190,7 @@ function assertStylistIsAvailable(availabilityData, stylistId, start) {
     }
 
     const availabilityEndMinutes = parseTimeToMinutes(availableTime.end_time);
-    if (startMinutes >= availabilityEndMinutes) {
+    if (startMinutes > availabilityEndMinutes) {
       throw new Error(
         `appointment start time - ${start} is later than stylist ${stylistId}'s available window`,
       );
