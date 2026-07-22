@@ -170,9 +170,8 @@ async function getBreedByName(dbClient, breedName) {
   return breedRes.rows[0] ?? null;
 }
 
-function assertStylistIsAvailable(availabilityData, stylistId, start, end) {
+function assertStylistIsAvailable(availabilityData, stylistId, start) {
   const startParts = getBusinessDateTimeParts(start);
-  const endParts = getBusinessDateTimeParts(end);
   const availableTime = availabilityData.find(
     (a) => a.day_of_week === startParts.dayOfWeek,
   );
@@ -191,10 +190,9 @@ function assertStylistIsAvailable(availabilityData, stylistId, start, end) {
     }
 
     const availabilityEndMinutes = parseTimeToMinutes(availableTime.end_time);
-    const endMinutes = endParts.hour * 60 + endParts.minute;
-    if (endMinutes > availabilityEndMinutes) {
+    if (startMinutes > availabilityEndMinutes) {
       throw new Error(
-        `appointment end time - ${end} is later than stylist ${stylistId}'s available window`,
+        `appointment start time - ${start} is later than stylist ${stylistId}'s available window`,
       );
     }
     return true;
@@ -280,7 +278,7 @@ async function assertNewTimeWindowIsValid(
 
   //stylist must have availability
   const availabilityData = await getAvailability(dbClient, stylistId);
-  assertStylistIsAvailable(availabilityData, stylistId, start, end);
+  assertStylistIsAvailable(availabilityData, stylistId, start);
 
   //check for time off overlap if time off data exists
   const timeOffsData = await getTimeOff(dbClient, stylistId);
@@ -675,7 +673,7 @@ export async function book({
 
     //stylist must have availability
     const availabilityData = await getAvailability(dbClient, stylistId);
-    assertStylistIsAvailable(availabilityData, stylistId, start, end);
+    assertStylistIsAvailable(availabilityData, stylistId, start);
 
     //check for time off overlap
     const timeOffsData = await getTimeOff(dbClient, stylistId);
@@ -868,7 +866,7 @@ export async function bookFromScratch({
     assertStartEndOnSameDay(start, end);
 
     const availabilityData = await getAvailability(dbClient, stylistId);
-    assertStylistIsAvailable(availabilityData, stylistId, start, end);
+    assertStylistIsAvailable(availabilityData, stylistId, start);
 
     const timeOffsData = await getTimeOff(dbClient, stylistId);
     assertNoTimeOffOverlap(timeOffsData, stylistId, start, end);

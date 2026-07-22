@@ -479,7 +479,7 @@ describe("book()", () => {
     expect(mockQuery).not.toHaveBeenCalled();
   });
 
-  it("throws when appointment end time is earlier than stylist's available time", async () => {
+  it("throws when appointment start time is earlier than stylist's available time", async () => {
     /*****appointment starts earlier than stylist's available window*****/
     mockQuery
       .mockResolvedValueOnce() // BEGIN
@@ -518,8 +518,8 @@ describe("book()", () => {
     );
   });
 
-  it("throws when appointment end time is later than stylist's available time", async () => {
-    /*****appointment ends later than stylist's available window*****/
+  it("throws when appointment start time is later than stylist's available time", async () => {
+    /*****appointment starts later than stylist's available window*****/
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [{ id: 1, owner: 1 }] }) //pet
@@ -544,12 +544,6 @@ describe("book()", () => {
           { day_of_week: 4, start_time: "09:00:00", end_time: "17:00:00" },
         ],
       }) //availability
-      // .mockResolvedValueOnce({ rows: [{ id: 10, price: 50, duration_minutes: 60, service_name: "Bath" }] }) //timeoff
-      .mockResolvedValueOnce({ rows: [] })
-      .mockRejectedValueOnce({
-        code: "P0001",
-        message: "appointment overlaps stylist time off",
-      })
       .mockResolvedValueOnce(); // ROLLBACK
 
     await expect(
@@ -562,7 +556,7 @@ describe("book()", () => {
         start_time: new Date(FUTURE_START).setHours(18, 0, 0),
       }),
     ).rejects.toThrow(
-      /appointment end time .* is later than stylist 2's available window/,
+      /appointment start time .* is later than stylist 2's available window/,
     );
   });
 
@@ -1116,8 +1110,7 @@ describe("update()", () => {
     ).rejects.toThrow("start time and end time must be on the same day");
   });
 
-  it("Update service configuration - throws when new service duration exceeds stylist's available time", async () => {
-    /*****appointment starts earlier than stylist's available window*****/
+  it("Update service configuration - allows new service duration to exceed stylist's available time", async () => {
     const mockLongServiceConfiguration = {
       breed_id: 100,
       service_id: 99,
@@ -1125,6 +1118,12 @@ describe("update()", () => {
       price: 30,
       duration_minutes: 60 * 12,
       buffer_minutes: 20,
+    };
+    const mockUpdatedAppointment = {
+      ...mockAppointment,
+      service_id: 999,
+      price_snapshot: mockLongServiceConfiguration.price,
+      duration_snapshot: mockLongServiceConfiguration.duration_minutes,
     };
     mockQuery
       .mockResolvedValueOnce() // BEGIN
@@ -1135,17 +1134,18 @@ describe("update()", () => {
       .mockResolvedValueOnce({ rows: [mockPet] })
       .mockResolvedValueOnce({ rows: [mockLongServiceConfiguration] })
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
-      .mockResolvedValueOnce(); // ROLLBACK
+      .mockResolvedValueOnce({ rows: [] }) //time off
+      .mockResolvedValueOnce({ rows: [] }) //overlap check
+      .mockResolvedValueOnce({ rows: [mockUpdatedAppointment] }) //return updated appointment
+      .mockResolvedValueOnce(); // COMMIT
 
-    await expect(
-      update(APPOINTMENT_ID, {
-        serviceId: 999,
-      }),
-    ).rejects.toThrow(
-      new RegExp(
-        `appointment end time .* is later than stylist ${mockAppointment.stylist_id}'s available window`,
-      ),
-    );
+    const result = await update(APPOINTMENT_ID, {
+      serviceId: 999,
+    });
+
+    expect(result).toEqual(mockUpdatedAppointment);
+    expect(mockQuery).toHaveBeenCalled(11);
+    expect(mockRelease).toHaveBeenCalled();
   });
 
   it(`Update service configuration - throws when appointment time overlaps with stylist's time off`, async () => {
@@ -1240,8 +1240,13 @@ describe("update()", () => {
     );
   });
 
-  it("Update start time throws when appointment end time is later than stylist's available time", async () => {
+  it("Update start time allows appointment end time later than stylist's available time", async () => {
     /*****appointment ends later than stylist's available window*****/
+    const startTime = new Date("2028-03-06 16:50:00.000 -0500");
+    const mockUpdatedAppointment = {
+      ...mockAppointment,
+      start_time: startTime,
+    };
     mockQuery
       .mockResolvedValueOnce() // BEGIN
       .mockResolvedValueOnce({ rows: [mockAppointment] }) //appointment
@@ -1249,17 +1254,17 @@ describe("update()", () => {
       .mockResolvedValueOnce({ rows: [mockServiceConfiguration] })
       .mockResolvedValueOnce({ rows: availabilityRows }) //availability
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce(); // ROLLBACK
+      .mockResolvedValueOnce({ rows: [] }) //overlap check
+      .mockResolvedValueOnce({ rows: [mockUpdatedAppointment] }) //return updated appointment
+      .mockResolvedValueOnce(); // COMMIT
 
-    await expect(
-      update(APPOINTMENT_ID, {
-        startTime: new Date("2028-03-06 16:50:00.000 -0500"),
-      }),
-    ).rejects.toThrow(
-      new RegExp(
-        `appointment end time .* is later than stylist ${mockAppointment.stylist_id}'s available window`,
-      ),
-    );
+    const result = await update(APPOINTMENT_ID, {
+      startTime,
+    });
+
+    expect(result).toEqual(mockUpdatedAppointment);
+    expect(mockQuery).toHaveBeenCalled(8);
+    expect(mockRelease).toHaveBeenCalled();
   });
 
   it(`Update start time throws when appointment time overlaps with stylist's time off`, async () => {

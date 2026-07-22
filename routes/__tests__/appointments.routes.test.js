@@ -145,6 +145,7 @@ describe("Appointment Routes", () => {
       expect(sendAppointmentCreatedEmail).toHaveBeenCalledWith({
         to: "kai@example.com",
         customerName: "Kai Li",
+        customerPhone: "1234567890",
         petName: "Mochi",
         serviceName: "Full Groom",
         breedName: "Poodle",
@@ -282,6 +283,7 @@ describe("Appointment Routes", () => {
       expect(sendAppointmentCreatedEmail).toHaveBeenCalledWith({
         to: "kai@example.com",
         customerName: "Kai Li",
+        customerPhone: "1234567890",
         petName: "Mochi",
         serviceName: "Full Groom",
         breedName: undefined,
